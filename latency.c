@@ -144,7 +144,7 @@ int main(int argc, char* argv[])
 
 	workingset_size = g_mem_size / CACHE_LINE_SIZE;
 	srand(0);
-#if 1
+#if 0
         param.sched_priority = 1;
         if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
 		perror("sched_setscheduler failed");
@@ -155,8 +155,10 @@ int main(int argc, char* argv[])
 
 	/* allocate */
 	list = (struct item *)malloc(sizeof(struct item) * workingset_size + CACHE_LINE_SIZE);
+#if 1
 	list = (struct item *)
-		((((unsigned)list + CACHE_LINE_SIZE) >> CACHE_LINE_BITS) << CACHE_LINE_BITS);
+		((((unsigned long)list + CACHE_LINE_SIZE) >> CACHE_LINE_BITS) << CACHE_LINE_BITS);
+#endif
 
 	printf("addr: 0x%x   aligned?:%s\n", (unsigned)list, (((unsigned)list)%64==0)?"yes":"no");
 	for (i = 0; i < workingset_size; i++) {

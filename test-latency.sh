@@ -1,11 +1,10 @@
 #!/bin/bash
 
 . functions
-init_system
-init_log test-latency.txt
 
-#WSIZES="16 64 512 32768"
-#NCPUS=7
+LOG="test-latency.txt"
+init_system
+init_log $LOG
 
 WSIZES="32768"
 NCPUS=3
@@ -19,7 +18,7 @@ load_on()
     killall -9 bandwidth latency
 
     for c in $cores; do
-	./latency -c $c -m $size $accesstype -i 10000000 &
+	./latency -c $c -m $size -i 10000000 &
     done > /dev/null
 
     sleep 10

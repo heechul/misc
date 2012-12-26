@@ -17,16 +17,14 @@ disable_prefetch()
 {
     check_root
     modprobe msr
-    ./disable_core2_prefetch-0.1/disable_core2_prefetch >& /dev/null
-    echo "DISABLE H/W prefetcher"	
+    ./disable_core2_prefetch-0.1/disable_core2_prefetch >& /dev/null && echo "DISABLE H/W prefetcher"	
 }
 
 enable_prefetch()
 {
     check_root
     modprobe msr
-    ./disable_core2_prefetch-0.1/enable_core2_prefetch >& /dev/null
-    echo "ENABLE H/W prefetcher"	
+    ./disable_core2_prefetch-0.1/enable_core2_prefetch >& /dev/null && echo "ENABLE H/W prefetcher"	
 }
 
 init_cgroup()

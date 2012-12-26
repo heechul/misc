@@ -6,4 +6,5 @@ echo 1 1 1 > core
 echo 2 1 0 > core
 echo 3 1 1 > core
 echo 2 > colors
+echo 2 > debug_level 
 echo 1 > enable
