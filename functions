@@ -1,0 +1,105 @@
+#!/bin/bash1
+
+error()
+{
+    echo "ERR: $*" 1>&2
+    exit
+}
+
+check_root()
+{
+    if [ `whoami` != "root" ]; then
+	error "root perm. is needed"
+    fi
+}
+
+disable_prefetch()
+{
+    check_root
+    modprobe msr
+    ./disable_core2_prefetch-0.1/disable_core2_prefetch >& /dev/null
+    echo "DISABLE H/W prefetcher"	
+}
+
+enable_prefetch()
+{
+    check_root
+    modprobe msr
+    ./disable_core2_prefetch-0.1/enable_core2_prefetch >& /dev/null
+    echo "ENABLE H/W prefetcher"	
+}
+
+init_cgroup()
+{
+    mount | grep cgroup || mount -t cgroup xxx /sys/fs/cgroup
+    mkdir -p /sys/fs/cgroup/system
+    pushd /sys/fs/cgroup/system
+    cat /sys/devices/system/cpu/online > cpuset.cpus || error "fail"
+    echo 0 > cpuset.mems
+    for t in `cat /sys/fs/cgroup/tasks`; do
+	echo $t > tasks || echo "PID $t failed"
+    done 2> /dev/null
+    cat tasks
+    echo 1024 > cpu.shares
+    popd
+
+    for i in 0 1 2 3; do
+        mkdir -p /sys/fs/cgroup/experiment-c$i
+	pushd /sys/fs/cgroup/experiment-c$i
+	echo $i > cpuset.cpus
+	echo 0 > cpuset.mems
+	echo 32768 > cpu.shares
+	popd
+    done
+} > /dev/null
+
+stop_services()
+{
+    check_root
+    service stop mysql
+    service stop apache2
+    dropbox stop
+}
+
+init_system()
+{
+    echo "one time things"
+    echo 8 8 8 8 > /proc/sys/kernel/printk
+    echo 2048 > /sys/kernel/debug/tracing/buffer_size_kb
+    export PATH=$HOME/bin:$PATH
+    init_cgroup
+    stop_services
+    check_root
+    rmmod memsched
+    sync
+} > /dev/null
+
+LOGFILE=""
+
+init_log()
+{
+    LOGFILE=$1
+    {
+	echo
+	echo ----- 
+	echo
+	# enable_prefetch
+	disable_prefetch
+	uname -a
+	svn log -r HEAD
+	date
+    } >> $LOGFILE
+    tail $LOGFILE
+    chown heechul.heechul $LOGFILE
+}
+
+echo_log()
+{
+    [ ! -z "$LOGFILE" ] && echo $* >> $LOGFILE
+    echo $*
+}
+
+show_log()
+{
+    [ ! -z "$LOGFILE" ] && tail $LOGFILE -n $1
+}
