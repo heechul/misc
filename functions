@@ -69,6 +69,9 @@ init_system()
     stop_services
     check_root
     rmmod memsched
+    # enable_prefetch
+    disable_prefetch
+
     sync
 } > /dev/null
 
@@ -81,10 +84,8 @@ init_log()
 	echo
 	echo ----- 
 	echo
-	# enable_prefetch
-	disable_prefetch
 	uname -a
-	svn log -r HEAD
+#	svn log -r HEAD
 	date
     } >> $LOGFILE
     tail $LOGFILE
