@@ -59,8 +59,15 @@ elif [ "$TARGET" = "core2quadB" ]; then
     set_core_cgroup 1 16 16
     set_core_cgroup 2 0 16
     set_core_cgroup 3 16 16
+elif [ "$TARGET" = "i5" ]; then
+    NCOLOR=64
+    set_core_cgroup 0 0 1
+    set_core_cgroup 1 0 1
+    set_core_cgroup 2 1 1
+    set_core_cgroup 3 1 1
 fi
 
 echo $NCOLOR  > /sys/kernel/debug/color_page_alloc/colors
 echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
 echo 2 > /sys/kernel/debug/color_page_alloc/enable
+
