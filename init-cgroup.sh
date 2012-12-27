@@ -1,6 +1,7 @@
+#!/bin/bash
+
 init_system()
 {
-    serivce lightdm stop
     if !(mount | grep cgroup); then
 	mount -t cgroup xxx /sys/fs/cgroup
     fi
