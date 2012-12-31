@@ -41,6 +41,7 @@ set_core_cgroup 1 "2-3"
 set_core_cgroup 2 "4-5"
 set_core_cgroup 3 "6-7"
 
+echo "128" > /sys/kernel/debug/tracing/buffer_size_kb
 echo -n "colors: "
 cat /sys/kernel/debug/color_page_alloc/colors
 echo 4 > /sys/kernel/debug/color_page_alloc/debug_level
