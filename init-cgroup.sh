@@ -26,7 +26,8 @@ set_core_cgroup()
     for t in `cat /sys/fs/cgroup/core${core}/tasks`; do
 	echo $t > /sys/fs/cgroup/tasks
     done
-    rmdir /sys/fs/cgroup/core${core}
+    direc="/sys/fs/cgroup/core${core}"
+    [ -d "$direc" ] && rmdir $direc
     mkdir /sys/fs/cgroup/core${core}
     pushd /sys/fs/cgroup/core${core}
     echo $core > cpuset.cpus
