@@ -11,6 +11,9 @@ init_system()
 
     echo 16 > $DBGFS/dram_rank_shift
     echo 2 > $DBGFS/dram_rank_bits
+
+    echo flush > $DBGFS/control
+    echo 0 > $DBGFS/cache_color_bits
 }
 
 
@@ -18,8 +21,8 @@ set_system_cgroup()
 {
     mkdir /sys/fs/cgroup/system
     pushd /sys/fs/cgroup/system
-    echo 0 > cpuset.cpus
-    echo 0 > cpuset.mems
+    echo 0      > cpuset.cpus
+    echo 0      > cpuset.mems
     for t in `cat /sys/fs/cgroup/tasks`; do
         echo $t > tasks
     done 2> /dev/null
@@ -33,9 +36,9 @@ set_corun_samebank_cgroup()
 
     echo 0-3    > cpuset.cpus
     echo 0      > cpuset.mems
-    echo 0-7    > phdusa.colors
     echo 1      > phdusa.dram_rank
     echo 0      > phdusa.dram_bank
+    echo 0      > phdusa.colors
     popd
 }
 
@@ -46,9 +49,9 @@ set_corun_diffbank_cgroup()
 
     echo 0-3    > cpuset.cpus
     echo 0      > cpuset.mems
-    echo 0-7    > phdusa.colors
     echo 1      > phdusa.dram_rank
     echo 1-7    > phdusa.dram_bank
+    echo 0      > phdusa.colors
     popd
 }
 
@@ -66,25 +69,27 @@ set_core_cgroup()
     echo $core > cpuset.cpus
     echo 0 > cpuset.mems
 
-    echo 0-7    > phdusa.colors
+    #echo 0-7    > phdusa.colors
     echo 1      > phdusa.dram_rank
     echo $banks > phdusa.dram_bank
+    echo 0      > phdusa.colors
     popd
 }
 
 init_system
 
-set_core_cgroup 0 "0"
-set_core_cgroup 1 "2"
-set_core_cgroup 2 "4"
-set_core_cgroup 3 "6"
+set_core_cgroup 0 "0"  # <test core
+
+set_core_cgroup 1 "1"
+set_core_cgroup 2 "2"
+set_core_cgroup 3 "3"
 
 set_corun_samebank_cgroup
 set_corun_diffbank_cgroup
 
 echo "128" > /sys/kernel/debug/tracing/buffer_size_kb
 
-echo 3 > $DBGFS/debug_level
+echo 2 > $DBGFS/debug_level
 for f in $DBGFS/dram_*; do 
     echo $f `cat $f`
 done
