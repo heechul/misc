@@ -45,7 +45,7 @@ enum access_type { READ, WRITE, RDWR, WRST};
 /**************************************************************************
  * Global Variables
  **************************************************************************/
-int g_mem_size = 8192 * 1024;	   /* memory size */
+int g_mem_size = 16384 * 1024;	   /* memory size */
 int g_indx = 0;			   /* global index used for accessing the array */
 int g_next = (CACHE_LINE_SIZE/4);  /* incrementing the next element in the array 
 				      (Sequtial Default) */
