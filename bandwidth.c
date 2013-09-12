@@ -11,6 +11,8 @@
 /**************************************************************************
  * Conditional Compilation Options
  **************************************************************************/
+#define P4080_MCTRL_INTRV_NONE 1
+#define P4080_MCTRL_INTRV_CLCS 0
 
 /**************************************************************************
  * Included Files
@@ -56,6 +58,7 @@ char *g_label = NULL;
 
 uint64_t g_nread = 0;	           /* number of bytes read */
 unsigned int g_start;		   /* starting time */
+int cpuid = 0;
 
 /**************************************************************************
  * Public Functions
@@ -85,8 +88,8 @@ void quit(int param)
 	printf("g_nread(bytes read) = %lld\n", g_nread);
 	printf("elapsed = %.2f sec ( %.0f usec )\n", dur_in_sec, dur);
 	bw = (float)g_nread / dur_in_sec / 1024 / 1024;
-	printf("B/W = %.2f MB/s | ", bw);
-	printf("average = %.2f ns\n", (dur*1000)/(g_nread/CACHE_LINE_SIZE));
+	printf("CPU%d: B/W = %.2f MB/s | ",cpuid, bw);
+	printf("CPU%d: average = %.2f ns\n", cpuid, (dur*1000)/(g_nread/CACHE_LINE_SIZE));
 
 	if (g_fd) {
 		fprintf(g_fd, "%s %d\n", g_label, (int)bw);
@@ -152,7 +155,6 @@ int main(int argc, char *argv[])
 {
 	uint64_t sum = 0;
 	unsigned finish = 5;
-	int cpuid = 0;
 	int prio = 0;        
 	int num_processors;
 	int acc_type = READ;
@@ -188,18 +190,32 @@ int main(int argc, char *argv[])
 				g_next = (CACHE_LINE_SIZE/4);				
 			}
 			/* same bank */
+#if P4080_MCTRL_INTRV_NONE
 			else if( strcmp(optarg,"Row") == 0 ) {
 				g_indx = 0;
-				g_next = (CACHE_LINE_SIZE/4) * 1024;		
+				g_next = (CACHE_LINE_SIZE/4) * 1024;
+
 			}
 			/* diff bank */
 			else if( strcmp(optarg,"Bank") == 0 ) {
-				g_indx = cpuid*128;
+				g_indx = cpuid*128*(CACHE_LINE_SIZE/4);
 				g_next = (CACHE_LINE_SIZE/4) * 1024;
 			}
+#elif P4080_MCTRL_INTRV_CLCS
+			else if( strcmp(optarg,"Row") == 0 ) {
+				g_indx = 0;
+				g_next = (CACHE_LINE_SIZE/4) * 1024 * 8;// 2^19
+			}
+			/* diff bank */
+			else if( strcmp(optarg,"Bank") == 0 ) {
+				g_indx = cpuid*256*(CACHE_LINE_SIZE/4); // 2^16
+				g_next = (CACHE_LINE_SIZE/4) * 1024 * 8;// 2^19
+			}
+#endif
 			else
 				exit(1);
 			break;
+
 		case 't': /* set time in secs to run */
 			finish = strtol(optarg, NULL, 0);
 			break;
@@ -243,6 +259,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	g_indx *= cpuid;
+
 	/*
 	 * allocate contiguous region of memory 
 	 */ 
@@ -251,7 +269,7 @@ int main(int argc, char *argv[])
 		int fd = -1;
 		unsigned long offset;
 
-		printf("Use mmap\n");
+		printf("Use mmap| g_indx: 0x%x g_next: 0x%x\n", g_indx, g_next);
 		fd = open("/dev/mem", O_RDWR | O_SYNC);
 		if(fd == -1) {
 			fprintf(stderr, "ERROR Opening /dev/mem\n");	
