@@ -159,13 +159,23 @@ int main(int argc, char* argv[])
 	int i,j;
 
 	int repeat = 1000;
+
 	int mlp = 1;
+	int offset = 0;
+
+	int page_shift = 13;
 
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "m:c:i:l:h")) != -1) {
+	while ((opt = getopt(argc, argv, "b:o:m:c:i:l:h")) != -1) {
 		switch (opt) {
+		case 'b': /* bank ffset */
+			page_shift = strtol(optarg, NULL, 0);
+			break;
+		case 'o': /* bank offset */
+			offset = strtol(optarg, NULL, 0);
+			break;
 		case 'm': /* set memory size */
 			g_mem_size = 1024 * strtol(optarg, NULL, 0);
 			break;
@@ -192,7 +202,6 @@ int main(int argc, char* argv[])
 			break;
 		case 'l': /* iterations */
 			mlp = strtol(optarg, NULL, 0);
-			fprintf(stderr, "MLP=%d\n", mlp);
 			break;
 		}
 
@@ -212,18 +221,27 @@ int main(int argc, char* argv[])
 
 	/* initialize data */
 	for (i = 0; i < g_mem_size / PAGE_SIZE; i++) {
-		for (j = 0; j < PAGE_SIZE; j+= DRAM_PAGE_SIZE ) {
+		for (j = 0; j < PAGE_SIZE; j+= (1<<page_shift) ) {
+			int idx = (i*PAGE_SIZE + j)/4;
 			if (i == (g_mem_size / PAGE_SIZE - 1))
-				memchunk[(i*PAGE_SIZE + j)/4] = 0;
+				memchunk[idx] = 0;
 			else
-				memchunk[(i*PAGE_SIZE + j)/4] = (i+1)*PAGE_SIZE/4;
+				memchunk[idx] = (i+1)*PAGE_SIZE/4;
+			if (j < (1<<page_shift) * 7)
+				printf("%p ", &memchunk[idx]);
 		}
+		printf(" < %d\n", i);
 	}
 
 	for (i = 0; i < mlp; i++) {
-		list[i] = &memchunk[(i * DRAM_PAGE_SIZE)/4];
+		int idx = (((i + offset) * (1<<page_shift)) % PAGE_SIZE)/4;
+		// list[i] = &memchunk[(i * DRAM_PAGE_SIZE)/4];
+		list[i] = &memchunk[idx];
 		next[i] = 0;
+		printf("list[%d]=%p\n", i, list[i]);
 	}
+
+	printf("offset: %d, mlp: %d, pshift: %d\n", offset, mlp, page_shift);
 
 #if 0
         param.sched_priority = 10;
