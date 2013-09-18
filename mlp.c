@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
 	}
 
 	/* alloc memory. align to a page boundary */
-	memchunk = mmap(0, 
+	memchunk = mmap((void *)0x700000000, 
 		    g_mem_size,
 		    PROT_READ | PROT_WRITE, 
 		    MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
@@ -225,10 +225,12 @@ int main(int argc, char* argv[])
 		next[i] = 0;
 	}
 
-        param.sched_priority = 1;
+#if 0
+        param.sched_priority = 10;
         if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
 		perror("sched_setscheduler failed");
         }
+#endif
 	struct timespec start, end;
 
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -243,6 +245,7 @@ int main(int argc, char* argv[])
 
 	printf("size: %d (%d KB)\n", g_mem_size, g_mem_size/1024);
 	printf("duration %ld ns, #access %d\n", nsdiff, naccess);
+	printf("average latency: %ld ns\n", nsdiff/naccess);
 	printf("bandwidth %.2f MB/s\n", (double)64*1000*naccess/nsdiff);
 
 	return 0;
