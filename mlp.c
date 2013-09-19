@@ -39,6 +39,9 @@
 #define DRAM_PAGE_SIZE (1<<13)  /* DRAM page size = 8KB */
 #define CACHE_LINE_SIZE 64
 
+#define FATAL do { fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
+   __LINE__, __FILE__, errno, strerror(errno)); exit(1); } while(0)
+
 /**************************************************************************
  * Public Types
  **************************************************************************/
@@ -164,11 +167,14 @@ int main(int argc, char* argv[])
 	int offset = 0;
 
 	int page_shift = 13;
+	int fd = -1;
+
+	void *addr = (void *) 0x1000000080000000;
 
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "b:o:m:c:i:l:h")) != -1) {
+	while ((opt = getopt(argc, argv, "a:xb:o:m:c:i:l:h")) != -1) {
 		switch (opt) {
 		case 'b': /* bank ffset */
 			page_shift = strtol(optarg, NULL, 0);
@@ -203,21 +209,41 @@ int main(int argc, char* argv[])
 		case 'l': /* iterations */
 			mlp = strtol(optarg, NULL, 0);
 			break;
+		case 'a':
+			addr = (void *)strtol(optarg, NULL, 0);
+			break;
+		case 'x':
+			fd = open("/dev/mem", O_RDWR | O_SYNC);
+			if (fd < 0) {
+				perror("Open failed");
+				exit(1);
+			}
+			break;
 		}
 
 	}
 
 	/* alloc memory. align to a page boundary */
-	memchunk = mmap((void *)0x700000000, 
-		    g_mem_size,
-		    PROT_READ | PROT_WRITE, 
-		    MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
-		    -1, 0);
+	if (fd > 0) {
+		int flags = MAP_SHARED;
+		memchunk = mmap(0,
+				g_mem_size,
+				PROT_READ | PROT_WRITE, 
+				flags, 
+				fd, (off_t)addr);
+	} else {
+		memchunk = mmap((void *)0x700000000,
+				g_mem_size,
+				PROT_READ | PROT_WRITE, 
+				MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
+				fd, 0);
+	}
 
 	if (memchunk == MAP_FAILED) {
 		perror("failed to alloc");
 		exit(1);
 	}
+
 
 	/* initialize data */
 	for (i = 0; i < g_mem_size / PAGE_SIZE; i++) {
