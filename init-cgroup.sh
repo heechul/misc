@@ -1,16 +1,27 @@
 #!/bin/bash
 DBGFS=/sys/kernel/debug/color_page_alloc
 
+CH=1
+
+if [ $CH -eq 1 ]; then
+    echo "Single channel configuration"
+    BANK_SHIFT=19
+    BANK_BITS=2
+    RANK_SHIFT=12
+    RANK_BITS=2
+fi
+
+
 init_system()
 {
     if !(mount | grep cgroup); then
 	mount -t cgroup xxx /sys/fs/cgroup
     fi
-    echo 13 > $DBGFS/dram_bank_shift
-    echo 3 > $DBGFS/dram_bank_bits
+    echo $BANK_SHIFT > $DBGFS/dram_bank_shift
+    echo $BANK_BITS > $DBGFS/dram_bank_bits
 
-    echo 16 > $DBGFS/dram_rank_shift
-    echo 2 > $DBGFS/dram_rank_bits
+    echo $RANK_SHIFT > $DBGFS/dram_rank_shift
+    echo $RANK_BITS > $DBGFS/dram_rank_bits
 
     echo flush > $DBGFS/control
     echo 0 > $DBGFS/cache_color_bits
@@ -36,7 +47,7 @@ set_corun_samebank_cgroup()
 
     echo 0-3    > cpuset.cpus
     echo 0      > cpuset.mems
-    echo 1      > phdusa.dram_rank
+    echo 0      > phdusa.dram_rank
     echo 0      > phdusa.dram_bank
     echo 0      > phdusa.colors
     popd
@@ -47,10 +58,23 @@ set_corun_diffbank_cgroup()
     mkdir /sys/fs/cgroup/corun_diffbank
     pushd /sys/fs/cgroup/corun_diffbank
 
+    echo 0-3   > cpuset.cpus
+    echo 0      > cpuset.mems
+    echo 0      > phdusa.dram_rank
+    echo 1      > phdusa.dram_bank
+    echo 0      > phdusa.colors
+    popd
+}
+
+set_corun_samebankdiffrank_cgroup()
+{
+    mkdir /sys/fs/cgroup/corun_samebankdiffrank
+    pushd /sys/fs/cgroup/corun_samebankdiffrank
+
     echo 0-3    > cpuset.cpus
     echo 0      > cpuset.mems
     echo 1      > phdusa.dram_rank
-    echo 1-7    > phdusa.dram_bank
+    echo 0      > phdusa.dram_bank
     echo 0      > phdusa.colors
     popd
 }
@@ -86,6 +110,7 @@ set_core_cgroup 3 "3"
 
 set_corun_samebank_cgroup
 set_corun_diffbank_cgroup
+set_corun_samebankdiffrank_cgroup
 
 echo "128" > /sys/kernel/debug/tracing/buffer_size_kb
 

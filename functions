@@ -1,4 +1,4 @@
-#!/bin/bash1
+#!/bin/bash
 
 error()
 {
@@ -26,6 +26,7 @@ enable_prefetch()
     modprobe msr
     ./disable_core2_prefetch-0.1/enable_core2_prefetch >& /dev/null && echo "ENABLE H/W prefetcher"	
 }
+
 
 init_cgroup()
 {

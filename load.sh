@@ -1,7 +1,16 @@
 #!/bin/bash 
 
-MSIZE=16384
+#MSIZE=16384
+# MSIZE=65536
+#LOAD=latency
+LOAD=bandwidth
 
+MSIZE=$1
+
+if [ -z "$MSIZE" ]; then
+	echo "Usage: $0 <size>"
+	exit 1
+fi  
 wait_key()
 {
 	echo "Press any key"
@@ -11,22 +20,26 @@ wait_key()
 load()
 {
 	cpu=$1
-	./latency -m $MSIZE -i 10000000000 -c $cpu
+	if [ "$LOAD" = "latency" ]; then 
+		./latency -m $MSIZE -i 10000000000 -c $cpu
+	elif [ "$LOAD" = "bandwidth" ]; then
+		./bandwidth -m $MSIZE -t 10000000000 -c $cpu 
+	fi
 }
 
-killall latency
+killall latency bandfwidth
 
 wait_key
 load 1 &
-pidof latency
+pidof $LOAD
 
 wait_key
 load 2 &
-pidof latency
+pidof $LOAD
 
 wait_key
 load 3 &
-pidof latency
+pidof $LOAD
 
 wait_key
-killall latency
+killall latency bandwidth
