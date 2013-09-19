@@ -11,8 +11,9 @@
 /**************************************************************************
  * Conditional Compilation Options
  **************************************************************************/
-#define P4080_MCTRL_INTRV_NONE 1
+#define P4080_MCTRL_INTRV_NONE 0
 #define P4080_MCTRL_INTRV_CLCS 0
+#define XEON 0
 
 /**************************************************************************
  * Included Files
@@ -35,8 +36,12 @@
 /**************************************************************************
  * Public Definitions
  **************************************************************************/
-#define ADDR_2ND_RANK 0x40000000   /* the address of the 2nd Rank(1GB) of 
-				      memory of 1st Mem Controller */
+#if XEON
+#  define ADDR_2ND_RANK 0x80000000
+#else 
+#  define ADDR_2ND_RANK 0x40000000   /* the address of the 2nd Rank(1GB) of */
+#endif
+
 #define CACHE_LINE_SIZE 64	   /* cache Line size is 64 byte */
 
 /**************************************************************************
@@ -85,7 +90,7 @@ void quit(int param)
 	float bw;
 	float dur = get_usecs() - g_start;
 	dur_in_sec = (float)dur / 1000000;
-	printf("g_nread(bytes read) = %lld\n", g_nread);
+	printf("g_nread(bytes read) = %lld\n", (long long)g_nread);
 	printf("elapsed = %.2f sec ( %.0f usec )\n", dur_in_sec, dur);
 	bw = (float)g_nread / dur_in_sec / 1024 / 1024;
 	printf("CPU%d: B/W = %.2f MB/s | ",cpuid, bw);
@@ -198,7 +203,7 @@ int main(int argc, char *argv[])
 			}
 			/* diff bank */
 			else if( strcmp(optarg,"Bank") == 0 ) {
-				g_indx = cpuid*128*(CACHE_LINE_SIZE/4);
+				g_indx = 128*(CACHE_LINE_SIZE/4);
 				g_next = (CACHE_LINE_SIZE/4) * 1024;
 			}
 #elif P4080_MCTRL_INTRV_CLCS
@@ -208,7 +213,7 @@ int main(int argc, char *argv[])
 			}
 			/* diff bank */
 			else if( strcmp(optarg,"Bank") == 0 ) {
-				g_indx = cpuid*256*(CACHE_LINE_SIZE/4); // 2^16
+				g_indx = 256*(CACHE_LINE_SIZE/4); // 2^16
 				g_next = (CACHE_LINE_SIZE/4) * 1024 * 8;// 2^19
 			}
 #endif
@@ -269,16 +274,16 @@ int main(int argc, char *argv[])
 		int fd = -1;
 		unsigned long offset;
 
-		printf("Use mmap| g_indx: 0x%x g_next: 0x%x\n", g_indx, g_next);
+		fprintf(stderr, "Use mmap| g_indx: 0x%x g_next: 0x%x\n", g_indx, g_next);
 		fd = open("/dev/mem", O_RDWR | O_SYNC);
 		if(fd == -1) {
 			fprintf(stderr, "ERROR Opening /dev/mem\n");	
 			exit(1);
-		}
+		} 
 		/* offset variable is used to allocate each cpu to a different offset 
 		   from each other */
-		offset = ADDR_2ND_RANK + cpuid*g_mem_size;
-		
+		offset = ADDR_2ND_RANK; /*  + cpuid*g_mem_size;*/
+		fprintf(stderr, "offset: %p\n", (void *)offset);
 		/* use mmap to allocate each cpu to the specific address in memory */
 		g_mem_ptr = (int *)mmap(NULL, g_mem_size, PROT_READ|PROT_WRITE, 
 					MAP_SHARED, fd, offset);
@@ -286,6 +291,7 @@ int main(int argc, char *argv[])
 			fprintf(stderr, "could not allocate memarea");
 			exit(1);
 		}
+		fprintf(stderr, "mmap was successful: addr=%p\n", g_mem_ptr);
 	} else {
 		printf("Use standard malloc\n");
 		g_mem_ptr = (int *)malloc(g_mem_size);
