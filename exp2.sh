@@ -2,13 +2,13 @@
 
 #
 # Test isolation performance of coloring.
-# 
-# solo: run lat_mem_rd on Core 0 
+#
+# solo: run lat_mem_rd on Core 0
 # co-run: solo + run bandwidth on Core 2
 #
 
 CORE_BENCH=0
-CORE_CORUN=2
+CORE_CORUN=1
 
 . functions
 

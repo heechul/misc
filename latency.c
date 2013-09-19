@@ -145,7 +145,8 @@ int main(int argc, char* argv[])
 	workingset_size = g_mem_size / CACHE_LINE_SIZE;
 	srand(0);
 #if 0
-        param.sched_priority = 1;
+        param.sched_priority = 1; /* 1(low) - 99(high) for SCHED_FIFO or SCHED_RR
+				     0 for SCHED_OTHER or SCHED_BATCH */
         if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
 		perror("sched_setscheduler failed");
         }
@@ -155,10 +156,8 @@ int main(int argc, char* argv[])
 
 	/* allocate */
 	list = (struct item *)malloc(sizeof(struct item) * workingset_size + CACHE_LINE_SIZE);
-#if 1
 	list = (struct item *)
 		((((unsigned long)list + CACHE_LINE_SIZE) >> CACHE_LINE_BITS) << CACHE_LINE_BITS);
-#endif
 
 	printf("addr: 0x%x   aligned?:%s\n", (unsigned)list, (((unsigned)list)%64==0)?"yes":"no");
 	for (i = 0; i < workingset_size; i++) {
@@ -204,8 +203,8 @@ int main(int argc, char* argv[])
 
 	nsdiff = get_elapsed(&start, &end);
 	avglat = (int64_t)(nsdiff/workingset_size/repeat);
-	printf("duration %lldus\naverage %lldns | ", nsdiff/1000, avglat);
-	printf("bandwidth %lld MB (%lld MiB)/s\n", 
+	printf("duration %lldus\nCPU%d: average %lldns | ", nsdiff/1000,  cpuid, avglat);
+	printf("CPU%d: bandwidth %lld MB (%lld MiB)/s\n", cpuid,
 	       (int64_t)64*1000/avglat, 
 	       (int64_t)64*1000000000/avglat/1024/1024);
 	printf("readsum  %lld\n", readsum);

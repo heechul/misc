@@ -4,14 +4,14 @@ msize=$1
 
 reset_stat()
 {
-    echo reset > /sys/kernel/debug/color_page_alloc/core
+    echo reset > /sys/kernel/debug/color_page_alloc/control
     echo "reset stat.."
 }
 check_mem()
 {
     echo "> $1"
     cat /proc/buddyinfo | tail -n 15
-    cat /sys/kernel/debug/color_page_alloc/core
+    cat /sys/kernel/debug/color_page_alloc/control
 }
 reset_stat
 check_mem "Before"
