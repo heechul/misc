@@ -3,10 +3,9 @@
 . functions
 
 LOG="test-latency.txt"
-init_system
 init_log $LOG
 
-WSIZES="32768"
+WSIZES="16384"
 NCPUS=3
 
 load_on()
@@ -60,19 +59,31 @@ exp3()
 
     for wsize in $WSIZES; do
 	echo_log "WS=$wsize kb"
-	echo_log "2core (diff cache)"
-	load_on "2" $wsize; run_on 0 $wsize 100
-
-	echo_log "2core (same cache)"
+	echo_log "2core"
 	load_on "1" $wsize; run_on 0 $wsize 100
+
+	echo_log "3core"
+	load_on "1 2" $wsize; run_on 0 $wsize 100
 
 	echo_log "4core"
 	load_on "1 2 3" $wsize; run_on 0 $wsize 100
     done
 }
 
-exp1
-exp2
-exp3
+echo 1
+read
+load_on "1" $WSIZES
 
-show_log 10
+echo 2
+read
+load_on "1 2" $WSIZES
+
+echo 3
+read
+load_on "1 2 3" $WSIZES
+#exp1
+#exp2
+#exp3
+#
+#show_log 10
+

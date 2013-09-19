@@ -1,67 +1,103 @@
 #!/bin/bash
+DBGFS=/sys/kernel/debug/color_page_alloc
+
+CH=1
+
+if [ $CH -eq 1 ]; then
+    echo "Single channel configuration"
+    BANK_SHIFT=19
+    BANK_BITS=2
+    RANK_SHIFT=12
+    RANK_BITS=2
+fi
+
+
 init_system()
 {
-#    serivce lightdm stop
     if !(mount | grep cgroup); then
 	mount -t cgroup xxx /sys/fs/cgroup
     fi
-    echo 4096 >  /sys/kernel/debug/tracing/buffer_size_kb
+    echo $BANK_SHIFT > $DBGFS/dram_bank_shift
+    echo $BANK_BITS > $DBGFS/dram_bank_bits
+
+    echo $RANK_SHIFT > $DBGFS/dram_rank_shift
+    echo $RANK_BITS > $DBGFS/dram_rank_bits
+
+    echo flush > $DBGFS/control
+    echo 0 > $DBGFS/cache_color_bits
 }
 
 
-set_test_cgroup()
+set_system_cgroup()
 {
-    local name=test
-    local bank=$1
-    local rank=$2
-    local color=$3
-    [ -d "/sys/fs/cgroup/$name" ] || mkdir /sys/fs/cgroup/$name
-    pushd /sys/fs/cgroup/$name
-    echo 0 > cpuset.cpus
-    echo 0 > cpuset.mems
-    echo $bank > phdusa.dram_bank
-    echo $rank > phdusa.dram_rank
-    echo $color > phdusa.colors
+    mkdir /sys/fs/cgroup/system
+    pushd /sys/fs/cgroup/system
+    echo 0      > cpuset.cpus
+    echo 0      > cpuset.mems
+    for t in `cat /sys/fs/cgroup/tasks`; do
+        echo $t > tasks
+    done 2> /dev/null
     popd
 }
 
-set_corun_cgroup()
+set_corun_samebank_cgroup()
 {
-    local name=corun
-    local bank=$1
-    local rank=$2
-    local color=$3
-    [ -d "/sys/fs/cgroup/$name" ] || mkdir /sys/fs/cgroup/$name
-    pushd /sys/fs/cgroup/$name
-    echo 0-3 > cpuset.cpus
-    echo 0 > cpuset.mems
-    echo $bank > phdusa.dram_bank
-    echo $rank > phdusa.dram_rank
-    echo $color > phdusa.colors
+    mkdir /sys/fs/cgroup/corun_samebank
+    pushd /sys/fs/cgroup/corun_samebank
+
+    echo 0-3    > cpuset.cpus
+    echo 0      > cpuset.mems
+    echo 0      > phdusa.dram_rank
+    echo 0      > phdusa.dram_bank
+    echo 0      > phdusa.colors
+    popd
+}
+
+set_corun_diffbank_cgroup()
+{
+    mkdir /sys/fs/cgroup/corun_diffbank
+    pushd /sys/fs/cgroup/corun_diffbank
+
+    echo 0-3   > cpuset.cpus
+    echo 0      > cpuset.mems
+    echo 0      > phdusa.dram_rank
+    echo 1      > phdusa.dram_bank
+    echo 0      > phdusa.colors
+    popd
+}
+
+set_corun_samebankdiffrank_cgroup()
+{
+    mkdir /sys/fs/cgroup/corun_samebankdiffrank
+    pushd /sys/fs/cgroup/corun_samebankdiffrank
+
+    echo 0-3    > cpuset.cpus
+    echo 0      > cpuset.mems
+    echo 1      > phdusa.dram_rank
+    echo 0      > phdusa.dram_bank
+    echo 0      > phdusa.colors
     popd
 }
 
 init_dram_config()
 {
-    echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-    echo flush > /sys/kernel/debug/color_page_alloc/control
-
-    pushd /sys/kernel/debug/color_page_alloc
-    echo 13 > dram_bank_shift
-    echo  3 > dram_bank_bits
-    echo 16 > dram_rank_shift
-    echo  1 > dram_rank_bits
-    echo 12 > cache_color_shift
-    echo  1 > cache_color_bits
-
-    for f in dram* cache_*; do
-	echo -n "$f: "
-	cat $f
+    core=$1
+    banks=$2
+    for t in `cat /sys/fs/cgroup/core${core}/tasks`; do
+        echo $t > /sys/fs/cgroup/tasks
     done
+    direc="/sys/fs/cgroup/core${core}"
+    [ -d "$direc" ] && rmdir $direc
+    mkdir /sys/fs/cgroup/core${core}
+    pushd /sys/fs/cgroup/core${core}
+    echo $core > cpuset.cpus
+    echo 0 > cpuset.mems
 
+    #echo 0-7    > phdusa.colors
+    echo 1      > phdusa.dram_rank
+    echo $banks > phdusa.dram_bank
+    echo 0      > phdusa.colors
     popd
-
-    echo flush > /sys/kernel/debug/color_page_alloc/control
 }
 
 run_test()
@@ -74,19 +110,19 @@ run_test()
     cat /sys/kernel/debug/color_page_alloc/control
 }
 
-wait()
-{
-	buffer=""
-	echo "press key to continue"
-	read buffer
-}
+set_core_cgroup 0 "0"  # <test core
 
+set_core_cgroup 1 "1"
+set_core_cgroup 2 "2"
+set_core_cgroup 3 "3"
 
-init_system
-init_dram_config
+set_corun_samebank_cgroup
+set_corun_diffbank_cgroup
+set_corun_samebankdiffrank_cgroup
 
-set_test_cgroup 0 0 0
-set_corun_cgroup 0-7 0,1 1
-echo "0 0 0,1"
-wait
-run_test
+echo "128" > /sys/kernel/debug/tracing/buffer_size_kb
+
+echo 2 > $DBGFS/debug_level
+for f in $DBGFS/dram_*; do 
+    echo $f `cat $f`
+done

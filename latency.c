@@ -52,7 +52,7 @@ struct item {
  * Global Variables
  **************************************************************************/
 
-int g_mem_size = 8192*1024;
+int g_mem_size = 16384*1024;
 
 /**************************************************************************
  * Public Function Prototypes
@@ -94,10 +94,10 @@ int main(int argc, char* argv[])
 	struct list_head *pos;
 	struct timespec start, end;
 	uint64_t nsdiff;
-	int64_t avglat;
+	double avglat;
 	uint64_t readsum = 0;
 	int serial = 0;
-	int repeat = 1;
+	int repeat = 10;
 	int cpuid = 0;
 	struct sched_param param;
         cpu_set_t cmask;
@@ -156,10 +156,6 @@ int main(int argc, char* argv[])
 
 	/* allocate */
 	list = (struct item *)malloc(sizeof(struct item) * workingset_size + CACHE_LINE_SIZE);
-	list = (struct item *)
-		((((unsigned long)list + CACHE_LINE_SIZE) >> CACHE_LINE_BITS) << CACHE_LINE_BITS);
-
-	printf("addr: 0x%x   aligned?:%s\n", (unsigned)list, (((unsigned)list)%64==0)?"yes":"no");
 	for (i = 0; i < workingset_size; i++) {
 		list[i].data = i;
 		list[i].in_use = 0;
@@ -170,42 +166,43 @@ int main(int argc, char* argv[])
 
 	/* initialize */
 	i = workingset_size;
-	while (i > 0) {
-		int idx;
-		int j;
-		if (serial)
-			idx = workingset_size - i;
-		else
-			idx = rand() % workingset_size;
 
-		for (j = idx; j < idx + workingset_size; j++) {
-			int idx2 = j % workingset_size;
-			if (!list[idx2].in_use) {
-				list_add(&list[idx2].list, &head);
-				list[idx2].in_use = 1;
-				i--;
-				break;
-			}
+	int *perm = (int *)malloc(workingset_size * sizeof(int));
+	for (i = 0; i < workingset_size; i++)
+		perm[i] = i;
+
+	if (!serial) {
+		for (i = 0; i < workingset_size; i++) {
+			int tmp = perm[i];
+			int next = rand() % workingset_size;
+			perm[i] = perm[next];
+			perm[next] = tmp;
 		}
+	}
+	for (i = 0; i < workingset_size; i++) {
+		list_add(&list[perm[i]].list, &head);
+		// printf("%d\n", perm[i]);
 	}
 	fprintf(stderr, "initialized\n");
 
 	/* actual access */
 	clock_gettime(CLOCK_REALTIME, &start);
 	for (j = 0; j < repeat; j++) {
-		list_for_each(pos, &head) {
+		pos = (&head)->next;
+		for (i = 0; i < workingset_size; i++) {
 			struct item *tmp = list_entry(pos, struct item, list);
 			readsum += tmp->data;
+			pos = pos->next;
 			// printf("%d ", tmp->data, &tmp->data);
 		}
 	}
 	clock_gettime(CLOCK_REALTIME, &end);
 
 	nsdiff = get_elapsed(&start, &end);
-	avglat = (int64_t)(nsdiff/workingset_size/repeat);
-	printf("duration %lldus\nCPU%d: average %lldns | ", nsdiff/1000,  cpuid, avglat);
-	printf("CPU%d: bandwidth %lld MB (%lld MiB)/s\n", cpuid,
-	       (int64_t)64*1000/avglat, 
-	       (int64_t)64*1000000000/avglat/1024/1024);
-	printf("readsum  %lld\n", readsum);
+	avglat = (double)nsdiff/workingset_size/repeat;
+	printf("duration %ld us\naverage %.2f ns | ", nsdiff/1000, avglat);
+	printf("bandwidth %.2f MB (%.2f MiB)/s\n",
+	       (double)64*1000/avglat, 
+	       (double)64*1000000000/avglat/1024/1024);
+	printf("readsum  %ld\n", readsum);
 }
