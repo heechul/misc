@@ -29,6 +29,8 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <assert.h>
+
 #include "list.h"
 
 /**************************************************************************
@@ -36,7 +38,7 @@
  **************************************************************************/
 #define MAX_MLP 32
 #define PAGE_SIZE (2*1024*1024) /* Huge TLB */
-#define DRAM_PAGE_SIZE (1<<13)  /* DRAM page size = 8KB */
+#define DEFAULT_DRAM_PAGE_SHIFT 13  /* DRAM page size = 8KB */
 #define CACHE_LINE_SIZE 64
 
 #define FATAL do { fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
@@ -166,20 +168,18 @@ int main(int argc, char* argv[])
 	int mlp = 1;
 	int offset = 0;
 
-	int page_shift = 13;
+	int page_shift = DEFAULT_DRAM_PAGE_SHIFT;
 	int fd = -1;
-
-	void *addr = (void *) 0x1000000080000000;
 
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "a:xb:o:m:c:i:l:h")) != -1) {
+	while ((opt = getopt(argc, argv, "b:o:m:c:i:l:h")) != -1) {
 		switch (opt) {
-		case 'b': /* bank ffset */
+		case 'b': /* bank start bit */
 			page_shift = strtol(optarg, NULL, 0);
 			break;
-		case 'o': /* bank offset */
+		case 'o': /* bank offset (multiple of page_shift)*/
 			offset = strtol(optarg, NULL, 0);
 			break;
 		case 'm': /* set memory size */
@@ -206,44 +206,26 @@ int main(int argc, char* argv[])
 			repeat = strtol(optarg, NULL, 0);
 			fprintf(stderr, "repeat=%d\n", repeat);
 			break;
-		case 'l': /* iterations */
+		case 'l': /* MLP (memory level parallelism) */
 			mlp = strtol(optarg, NULL, 0);
-			break;
-		case 'a':
-			addr = (void *)strtol(optarg, NULL, 0);
-			break;
-		case 'x':
-			fd = open("/dev/mem", O_RDWR | O_SYNC);
-			if (fd < 0) {
-				perror("Open failed");
-				exit(1);
-			}
 			break;
 		}
 
 	}
 
 	/* alloc memory. align to a page boundary */
-	if (fd > 0) {
-		int flags = MAP_SHARED;
-		memchunk = mmap(0,
-				g_mem_size,
-				PROT_READ | PROT_WRITE, 
-				flags, 
-				fd, (off_t)addr);
-	} else {
-		memchunk = mmap((void *)0x700000000,
-				g_mem_size,
-				PROT_READ | PROT_WRITE, 
-				MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
-				fd, 0);
-	}
+	memchunk = mmap(0,
+			g_mem_size,
+			PROT_READ | PROT_WRITE, 
+			MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
+			fd, 0);
 
 	if (memchunk == MAP_FAILED) {
 		perror("failed to alloc");
 		exit(1);
 	}
 
+	assert((1<<page_shift) < PAGE_SIZE);
 
 	/* initialize data */
 	for (i = 0; i < g_mem_size / PAGE_SIZE; i++) {
@@ -253,10 +235,7 @@ int main(int argc, char* argv[])
 				memchunk[idx] = 0;
 			else
 				memchunk[idx] = (i+1)*PAGE_SIZE/4;
-			if (j < (1<<page_shift) * 7)
-				printf("%p ", &memchunk[idx]);
 		}
-		printf(" < %d\n", i);
 	}
 
 	for (i = 0; i < mlp; i++) {

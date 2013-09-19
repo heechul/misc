@@ -73,8 +73,10 @@ void print_fps()
 {
 	int64_t avgtime = t.tot / t.cnt;
 	float fps = (float)1000000000/avgtime;
-	fprintf(stdout, "fps: %.1f %d MB/s avg/min/max: %lld/%lld/%lld(us) miss:%d%%(%d/%lld)\n", fps, (int)(fps*g_frame_length*4/1024/1024),
-	       avgtime/1000, t.min/1000, t.max/1000, t.miss*100/(int)t.cnt, t.miss, t.cnt);
+	fprintf(stdout, "fps: %.1f %d MB/s avg/min/max: %d/%d/%d(us) miss:%d%%(%d/%ld)\n",
+		fps, (int)(fps*g_frame_length*4/1024/1024),
+		(int)(avgtime/1000), (int)(t.min/1000), (int)(t.max/1000), 
+		t.miss*100/(int)t.cnt, t.miss, (long)t.cnt);
 	fflush(stdout);
 }
 void quit()
@@ -202,6 +204,6 @@ int main(int argc, char* argv[])
 			init_stat(&t);
 		}
 	}
-	quit(0);
+	quit();
 }
 
