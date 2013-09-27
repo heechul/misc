@@ -38,7 +38,7 @@
  **************************************************************************/
 #define MAX_MLP 32
 #define PAGE_SIZE (2*1024*1024) /* Huge TLB */
-#define DEFAULT_DRAM_PAGE_SHIFT 13  /* DRAM page size = 8KB */
+#define DEFAULT_DRAM_PAGE_SHIFT 12  /* DRAM page size = 8KB */
 #define CACHE_LINE_SIZE 64
 
 #define FATAL do { fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \

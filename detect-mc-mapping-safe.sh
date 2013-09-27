@@ -13,7 +13,9 @@ if ! mount | grep hugetlbfs; then
 fi
 
 echo "Run a background task on core1"
-./mlp -c 1 -i 100000000000 >& /dev/null &
+for cpu in 1 2 3; do
+    ./mlp -c $cpu -i 100000000000 >& /dev/null &
+done
 
 sleep 1
 
