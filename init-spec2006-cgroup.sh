@@ -54,6 +54,8 @@ set_corun_samebank_cgroup()
     echo 2,3    > phdusa.dram_bank
     echo 0-3   	> phdusa.dram_rank 
     echo 0      > phdusa.colors
+
+    echo 50000 > cpu.rt_runtime_us # to allow RT schedulers
     popd
 }
 
@@ -84,9 +86,7 @@ set_corun_diffbank_cgroup()
     popd
 }
 
-
 init_system
-
 set_spec2006_cgroup
 set_corun_samebank_cgroup
 set_corun_diffbank_cgroup

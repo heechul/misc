@@ -6,6 +6,12 @@ error()
     exit
 }
 
+log_echo()
+{
+   echo "LOG: $*"
+   echo "$*" >> $outputfile
+}
+
 check_root()
 {
     if [ `whoami` != "root" ]; then
@@ -27,6 +33,20 @@ enable_prefetch()
     ./disable_core2_prefetch-0.1/enable_core2_prefetch >& /dev/null && echo "ENABLE H/W prefetcher"	
 }
 
+
+set_cpus()
+{
+    cpus=$1
+    idx=0
+    check_root
+
+    for v in $cpus; do
+	echo "Set CPU${idx} $v"
+	echo $v > /sys/devices/system/cpu/cpu${idx}/online
+	echo "performance" > /sys/devices/system/cpu/cpu${idx}/cpufreq/scaling_governor
+	idx=`expr $idx + 1`
+    done >& /dev/null
+}
 
 init_cgroup()
 {

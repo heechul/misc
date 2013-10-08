@@ -165,7 +165,6 @@ int main(int argc, char* argv[])
 	printf("allocated: wokingsetsize=%d entries\n", workingset_size);
 
 	/* initialize */
-	i = workingset_size;
 
 	int *perm = (int *)malloc(workingset_size * sizeof(int));
 	for (i = 0; i < workingset_size; i++)

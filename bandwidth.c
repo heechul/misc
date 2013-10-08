@@ -296,7 +296,9 @@ int main(int argc, char *argv[])
 		printf("Use standard malloc\n");
 		g_mem_ptr = (int *)malloc(g_mem_size);
 	}
-	memset(g_mem_ptr, 1, g_mem_size);
+
+	for (i = 0; i < g_mem_size / sizeof(int); i++)
+		g_mem_ptr[i] = i;
 
 	/* print experiment info before starting */
 	printf("memsize=%d KB, type=%s, cpuid=%d\n",
