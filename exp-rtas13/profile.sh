@@ -107,8 +107,8 @@ print_sysinfo()
 #benchb="450.soplex 464.h264ref"
 
 # benchb=$spec2006_xeon_all
-benchb=$spec2006_xeon_rta13
-
+# benchb=$spec2006_xeon_rta13
+benchb=462.libquantum
 init_system
 rmmod memguard
 set_cpus "1 1 1 1"

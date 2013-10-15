@@ -293,11 +293,11 @@ static char *dram_map(uint64_t pfn)
 {
 	static char buf[65];
 	/* TODO: fixme */
-	int dram_bank_shift = 13;
-	uint64_t dram_bank_mask = 0xf;
-	int dram_rank_shift = 32;
-	uint64_t dram_rank_mask = 0x1;
-	sprintf(buf, "ch[%d]=%ld bank[%d]=%ld",
+	int dram_bank_shift = 12;
+	uint64_t dram_bank_mask = 0x3;
+	int dram_rank_shift = 19;
+	uint64_t dram_rank_mask = 0x3;
+	sprintf(buf, "rank[%d]=%ld bank[%d]=%ld",
 		dram_rank_shift,
 		(pfn >> (dram_rank_shift - PAGE_SHIFT)) & dram_rank_mask,
 		dram_bank_shift,

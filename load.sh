@@ -20,10 +20,13 @@ wait_key()
 load()
 {
 	cpu=$1
+
+#	echo $$ > /sys/fs/cgroup/core$cpu/task
+
 	if [ "$LOAD" = "latency" ]; then 
 		./latency -m $MSIZE -i 10000000000 -c $cpu
 	elif [ "$LOAD" = "bandwidth" ]; then
-		./bandwidth -m $MSIZE -t 10000000000 -c $cpu 
+		./bandwidth -m $MSIZE -a write -t 10000000000 -c $cpu 
 	fi
 }
 

@@ -33,11 +33,11 @@ do_hrt_test()
 
     killall -2 thr hrt bandwidth latency
     killall -9 cpuhog
+    echo $$ > /sys/fs/cgroup/tasks
 
     # corun
-
     [ "$bankset" = "samebank" ] && set_cgroup "corun" "1-3" "0" "0" 0 
-    [ "$bankset" = "diffbank" ] && set_cgroup "corun" "1-3" "1" "0" 0 
+    [ "$bankset" = "diffbank" ] && set_cgroup "corun" "1-3" "1-7" "0,1" 0 
     if [ "$corun" = "bandwidth" ]; then
 	log_echo "co-run w/ 'bandwidth'"
 	./bandwidth -a write -c 1 -t 1000000 -f bwlog.c1 &

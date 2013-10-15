@@ -8,6 +8,8 @@
  *
  */
 
+/* clang -S -mllvm --x86-asm-syntax=intel ./bandwidth.c */
+
 /**************************************************************************
  * Conditional Compilation Options
  **************************************************************************/
@@ -103,16 +105,72 @@ void quit(int param)
 	exit(0);
 }
 
+/*
+void
+rd(iter_t iterations, void *cookie)
+{
+        state_t *state = (state_t *) cookie;
+        register TYPE *lastone = state->lastone;
+        register int sum = 0;
+
+        while (iterations-- > 0) {
+            register TYPE *p = state->buf;
+            while (p <= lastone) {
+                sum +=
+#define DOIT(i) p[i]+
+                DOIT(0) DOIT(4) DOIT(8) DOIT(12) DOIT(16) DOIT(20) DOIT(24)
+                DOIT(28) DOIT(32) DOIT(36) DOIT(40) DOIT(44) DOIT(48) DOIT(52)
+                DOIT(56) DOIT(60) DOIT(64) DOIT(68) DOIT(72) DOIT(76)
+                DOIT(80) DOIT(84) DOIT(88) DOIT(92) DOIT(96) DOIT(100)
+                DOIT(104) DOIT(108) DOIT(112) DOIT(116) DOIT(120)
+                p[124];
+                p +=  128;
+            }
+        }
+        use_int(sum);
+}
+#undef  DOIT
+*/
+
 int bench_read()
 {
 	int i;
 	int sum = 0;    
-
-	for ( i = g_indx; i < g_mem_size/4; i+=g_next ) {
-		sum += g_mem_ptr[i];
-		g_nread += CACHE_LINE_SIZE ;
+	register char *p = (char *)g_mem_ptr;
+	while ( p < (char *)&g_mem_ptr[g_mem_size/4]) {
+		sum += 
+#define DOIT(i) p[i]+
+                DOIT(0) 
+		DOIT(4)
+		DOIT(8)
+DOIT(12) DOIT(16) DOIT(20) DOIT(24)
+                DOIT(28) 
+		DOIT(32) 
+		DOIT(36) DOIT(40) DOIT(44) DOIT(48) DOIT(52)
+                DOIT(56) DOIT(60) 
+		DOIT(64) 
+		DOIT(68) DOIT(72) DOIT(76)
+                DOIT(80) DOIT(84) DOIT(88) DOIT(92) 
+                DOIT(96)
+                DOIT(100) DOIT(104) DOIT(108) DOIT(112) DOIT(116) DOIT(120)
+#if 0
+#endif
+                p[124];
+                p +=  128;
 	}
+	g_nread += g_mem_size;
 	return sum;
+}
+
+int bench_read_heechul()
+{
+	int i;	
+	int sum = 0;
+	for ( i = 0; i < g_mem_size/4; i+=16 ) {
+		sum += g_mem_ptr[i];
+	}
+	g_nread += g_mem_size;
+	return 1;
 }
 
 int bench_write()
@@ -300,6 +358,7 @@ int main(int argc, char *argv[])
 	for (i = 0; i < g_mem_size / sizeof(int); i++)
 		g_mem_ptr[i] = i;
 
+	memset((char *)g_mem_ptr, 1, g_mem_size);
 	/* print experiment info before starting */
 	printf("memsize=%d KB, type=%s, cpuid=%d\n",
 	       g_mem_size/1024,
