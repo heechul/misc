@@ -86,7 +86,29 @@ set_corun_diffbank_cgroup()
     popd
 }
 
+set_system_cgroup()
+{
+    mkdir -p /sys/fs/cgroup/system
+    pushd /sys/fs/cgroup/system
+    cat /sys/devices/system/cpu/online > cpuset.cpus || error "fail"
+    echo 0 > cpuset.mems
+
+    echo 0-3   	> cpuset.cpus
+    echo 0    	> cpuset.mems
+    echo 0-3    > phdusa.dram_bank
+    echo 0-3   	> phdusa.dram_rank 
+    echo 0      > phdusa.colors
+
+    for t in `cat /sys/fs/cgroup/tasks`; do
+	echo $t > tasks || echo "PID $t failed"
+    done 2> /dev/null
+    cat tasks
+    echo 1024 > cpu.shares
+    popd
+}
+
 init_system
+set_system_cgroup
 set_spec2006_cgroup
 set_corun_samebank_cgroup
 set_corun_diffbank_cgroup

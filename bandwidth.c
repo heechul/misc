@@ -359,6 +359,8 @@ int main(int argc, char *argv[])
 		g_mem_ptr[i] = i;
 
 	memset((char *)g_mem_ptr, 1, g_mem_size);
+	fprintf(stderr, "VADDR: %p-%p\n", (char *)g_mem_ptr, (char *)g_mem_ptr + g_mem_size);
+
 	/* print experiment info before starting */
 	printf("memsize=%d KB, type=%s, cpuid=%d\n",
 	       g_mem_size/1024,
