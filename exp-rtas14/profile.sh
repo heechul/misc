@@ -34,7 +34,7 @@ do_experiment()
     for b in $benchb; do
 	echo $b
 	echo "" > /sys/kernel/debug/tracing/trace
-	echo "flush" > /sys/kernel/debug/color_page_alloc/control
+	echo "flush" > /sys/kernel/debug/phalloc/control
 	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q &
 	sleep 10
 	kill -9 `ps x | grep gcc | grep -v perf | awk '{ print $1 }'`
@@ -107,8 +107,8 @@ print_sysinfo()
 #benchb="450.soplex 464.h264ref"
 
 # benchb=$spec2006_xeon_all
-# benchb=$spec2006_xeon_rta13
-benchb=462.libquantum
+benchb="470.lbm $spec2006_xeon_rta13"
+# benchb=462.libquantum
 init_system
 rmmod memguard
 set_cpus "1 1 1 1"

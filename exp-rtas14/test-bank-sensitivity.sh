@@ -11,102 +11,28 @@ repeat=1
 # [0X00] = 0,4    19,838,819,062  <-diff rank (?)
 # [X000] = 0,8    17,620,918,273
 
-set_cgroup_bank_rank()
+set_cgroup_bins()
 {
-    hi=$1
-    lo=$2
-    balance=$3
-    log_echo "1B-[$hi]-[$lo]-($balance)"
-    echo $hi  > /sys/fs/cgroup/spec2006/phdusa.dram_bank
-    echo $lo  > /sys/fs/cgroup/spec2006/phdusa.dram_rank
+    bins=$1
+    balance=$2
+    log_echo "4B-[$bins]-($balance)"
+    echo $bins  > /sys/fs/cgroup/spec2006/phalloc.bins
     echo $$ > /sys/fs/cgroup/spec2006/tasks
-    echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-    echo $balance > /sys/kernel/debug/color_page_alloc/alloc_balance
+    echo 2 > /sys/kernel/debug/phalloc/debug_level
+    echo $balance > /sys/kernel/debug/phalloc/alloc_balance
 }
 
-balance=2
-set_cgroup_bank_rank "0" "0,1"  $balance
-./profile.sh 0
-set_cgroup_bank_rank "0" "0,2"  $balance
-./profile.sh 0
-set_cgroup_bank_rank "0,1" "0"  $balance
-./profile.sh 0
-set_cgroup_bank_rank "0,2" "0"  $balance
+balance=0
+
+log_echo 'buddy-solo'
+echo 99 > /sys/kernel/debug/phalloc/debug_level
 ./profile.sh 0
 
-exit
-
-for balance in 4 3 2 1 0; do 
-    set_cgroup_bank_rank "0" "0-3"  $balance
-    ./profile.sh 0
-
-    set_cgroup_bank_rank "0-3" "0"  $balance
-    ./profile.sh 0
-done
-
-
-exit
-
-
-log_echo '4B-HI'
-for i in `seq 1 $repeat`; do
-echo 0    > /sys/fs/cgroup/spec2006/phdusa.dram_rank
-echo 0-3  > /sys/fs/cgroup/spec2006/phdusa.dram_bank
-echo $$ > /sys/fs/cgroup/spec2006/tasks
-echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-./profile.sh 0
-done
-
-log_echo '4B-LO(0)'
-for i in `seq 1 $repeat`; do
-echo 0-3  > /sys/fs/cgroup/spec2006/phdusa.dram_rank
-echo 0    > /sys/fs/cgroup/spec2006/phdusa.dram_bank
-echo $$ > /sys/fs/cgroup/spec2006/tasks
-echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-./profile.sh 0
-done
-exit
-log_echo 16_bank
-for i in `seq 1 $repeat`; do
-echo 0-3 > /sys/fs/cgroup/spec2006/phdusa.dram_rank
-echo 0-3 > /sys/fs/cgroup/spec2006/phdusa.dram_bank
-echo $$ > /sys/fs/cgroup/spec2006/tasks
-echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-./profile.sh 0
-done
-
-log_echo '8_bank(2rankx4bank)'
-for i in `seq 1 $repeat`; do
-echo 0-1 > /sys/fs/cgroup/spec2006/phdusa.dram_rank
-echo 0-3 > /sys/fs/cgroup/spec2006/phdusa.dram_bank
-echo $$ > /sys/fs/cgroup/spec2006/tasks
-echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-./profile.sh 0
-done
-
-log_echo '8_bank(4rankx2bank)'
-for i in `seq 1 $repeat`; do
-echo 0-3 > /sys/fs/cgroup/spec2006/phdusa.dram_rank
-echo 0-1 > /sys/fs/cgroup/spec2006/phdusa.dram_bank
-echo $$ > /sys/fs/cgroup/spec2006/tasks
-echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-./profile.sh 0
-done
-
-log_echo buddy
-echo 99 > /sys/kernel/color_page_alloc/debug_level
+log_echo "4 banks"
+log_echo '4B-HI-solo'
+set_cgroup_bins "0,4,8,12" $balance
 ./profile.sh 0
 
-
-
-for hi in 0 1 2 3; do
-    for lo in 0 1 2 3; do
-	log_echo "1B-$hi-$lo"
-	echo $lo  > /sys/fs/cgroup/spec2006/phdusa.dram_rank
-	echo $hi  > /sys/fs/cgroup/spec2006/phdusa.dram_bank
-	echo $$ > /sys/fs/cgroup/spec2006/tasks
-	echo 2 > /sys/kernel/debug/color_page_alloc/debug_level
-	./profile.sh 0
-    done
-done
-
+log_echo '4B-LO-solo'
+set_cgroup_bins "0-3" $balance
+./profile.sh 0

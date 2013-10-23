@@ -1,5 +1,5 @@
 #!/bin/bash
-DBGFS=/sys/kernel/debug/color_page_alloc
+DBGFS=/sys/kernel/debug/phalloc
 
 CH=1
 
@@ -35,9 +35,9 @@ set_spec2006_cgroup()
 
     echo 0      > cpuset.cpus
     echo 0      > cpuset.mems
-    echo 2,3    > phdusa.dram_bank
-    echo 0-3   	> phdusa.dram_rank  
-    echo 0      > phdusa.colors
+    echo 2,3    > phalloc.dram_bank
+    echo 0-3   	> phalloc.dram_rank  
+    echo 0      > phalloc.colors
 
     echo 950000 > cpu.rt_runtime_us # to allow RT schedulers
 
@@ -51,9 +51,9 @@ set_corun_samebank_cgroup()
 
     echo 0-3   	> cpuset.cpus
     echo 0    	> cpuset.mems
-    echo 2,3    > phdusa.dram_bank
-    echo 0-3   	> phdusa.dram_rank 
-    echo 0      > phdusa.colors
+    echo 2,3    > phalloc.dram_bank
+    echo 0-3   	> phalloc.dram_rank 
+    echo 0      > phalloc.colors
 
     echo 50000 > cpu.rt_runtime_us # to allow RT schedulers
     popd
@@ -66,9 +66,9 @@ set_percore_cgroup()
 	pushd /sys/fs/cgroup/core$cpu
 	echo 0-3   	> cpuset.cpus
 	echo 0    	> cpuset.mems
-	echo 0-3    > phdusa.dram_bank
-	echo 0-3	> phdusa.dram_rank 
-	echo 0      > phdusa.colors
+	echo 0-3    > phalloc.dram_bank
+	echo 0-3	> phalloc.dram_rank 
+	echo 0      > phalloc.colors
 	popd
     done
 }
@@ -80,9 +80,9 @@ set_corun_diffbank_cgroup()
 
     echo 0-3   	> cpuset.cpus
     echo 0    	> cpuset.mems
-    echo 0,1    > phdusa.dram_bank
-    echo 0-3   	> phdusa.dram_rank 
-    echo 0      > phdusa.colors
+    echo 0,1    > phalloc.dram_bank
+    echo 0-3   	> phalloc.dram_rank 
+    echo 0      > phalloc.colors
     popd
 }
 
@@ -95,9 +95,9 @@ set_system_cgroup()
 
     echo 0-3   	> cpuset.cpus
     echo 0    	> cpuset.mems
-    echo 0-3    > phdusa.dram_bank
-    echo 0-3   	> phdusa.dram_rank 
-    echo 0      > phdusa.colors
+    echo 0-3    > phalloc.dram_bank
+    echo 0-3   	> phalloc.dram_rank 
+    echo 0      > phalloc.colors
 
     for t in `cat /sys/fs/cgroup/tasks`; do
 	echo $t > tasks || echo "PID $t failed"
