@@ -34,7 +34,6 @@
 /**************************************************************************
  * Public Definitions
  **************************************************************************/
-#define MAX_MLP 32
 #define PAGE_SIZE (2*1024*1024) /* Huge TLB */
 #define DEFAULT_DRAM_PAGE_SHIFT 13  /* DRAM page size = 8KB */
 #define CACHE_LINE_SIZE 64
@@ -75,13 +74,13 @@ uint64_t get_elapsed(struct timespec *start, struct timespec *end)
 /**************************************************************************
  * Implementation
  **************************************************************************/
-int run(int iter, int mlp)
+int run(int iter)
 {
 	int i;
 	int cnt = 0;
 	for (i = 0; i < iter; i++) {
 		next = list[next];
-		cnt += mlp;
+		cnt ++;
 	}
 	return cnt;
 }
@@ -100,7 +99,6 @@ int main(int argc, char* argv[])
 
 	int repeat = 1000;
 
-	int mlp = 1;
 	int offset = 0;
 
 	int page_shift = DEFAULT_DRAM_PAGE_SHIFT;
@@ -171,19 +169,16 @@ int main(int argc, char* argv[])
 	if ((1<<page_shift) >= PAGE_SIZE)
 		off_idx ++;
 
-	for (i = 0; i < g_mem_size / PAGE_SIZE; i++) {
-		int idx = i * PAGE_SIZE / 4 + off_idx;
-
-		if (i == (g_mem_size / PAGE_SIZE - 1))
-			memchunk[idx] = off_idx;
+	list = &memchunk[off_idx];
+	for (i = 0; i < 32; i++) {
+		int idx = i * PAGE_SIZE / 4;
+		if (i == 31)
+			list[idx] = 0;
 		else
-			memchunk[idx] = (i+1) * PAGE_SIZE/4 + off_idx;
+			list[idx] = (i+1) * PAGE_SIZE/4;
 	}
-
-	list = memchunk;
-	next = off_idx;
-
-	printf("offset: %d, mlp: %d, pshift: %d\n", offset, mlp, page_shift);
+	next = 0;
+	printf("offset: %d, pshift: %d\n", offset, page_shift);
 
 #if 0
         param.sched_priority = 10;
@@ -196,7 +191,7 @@ int main(int argc, char* argv[])
 	clock_gettime(CLOCK_REALTIME, &start);
 
 	/* actual access */
-	int naccess = run(repeat, mlp);
+	int naccess = run(repeat);
 
 	clock_gettime(CLOCK_REALTIME, &end);
 
