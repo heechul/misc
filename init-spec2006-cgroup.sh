@@ -2,29 +2,20 @@
 DBGFS=/sys/kernel/debug/phalloc
 
 CH=1
+NDIMM=2
 
 if [ $CH -eq 1 ]; then
     echo "Single channel configuration"
-    BANK_SHIFT=19
-    BANK_BITS=2
-    RANK_SHIFT=12
-    RANK_BITS=2
+    MASK=0x183000
 fi
-
 
 init_system()
 {
     if !(mount | grep cgroup); then
 	mount -t cgroup xxx /sys/fs/cgroup
     fi
-    echo $BANK_SHIFT > $DBGFS/dram_bank_shift
-    echo $BANK_BITS > $DBGFS/dram_bank_bits
-
-    echo $RANK_SHIFT > $DBGFS/dram_rank_shift
-    echo $RANK_BITS > $DBGFS/dram_rank_bits
-
+    echo $MASK > $DBGFS/phalloc_mask
     echo flush > $DBGFS/control
-    echo 0 > $DBGFS/cache_color_bits
 }
 
 
@@ -35,12 +26,8 @@ set_spec2006_cgroup()
 
     echo 0      > cpuset.cpus
     echo 0      > cpuset.mems
-    echo 2,3    > phalloc.dram_bank
-    echo 0-3   	> phalloc.dram_rank  
-    echo 0      > phalloc.colors
-
+    echo 8-11,12-15    > phalloc.bins
     echo 950000 > cpu.rt_runtime_us # to allow RT schedulers
-
     popd
 }
 
@@ -51,11 +38,7 @@ set_corun_samebank_cgroup()
 
     echo 0-3   	> cpuset.cpus
     echo 0    	> cpuset.mems
-    echo 2,3    > phalloc.dram_bank
-    echo 0-3   	> phalloc.dram_rank 
-    echo 0      > phalloc.colors
-
-    echo 50000 > cpu.rt_runtime_us # to allow RT schedulers
+    echo 8-11,12-15    > phalloc.bins
     popd
 }
 
@@ -66,9 +49,7 @@ set_percore_cgroup()
 	pushd /sys/fs/cgroup/core$cpu
 	echo 0-3   	> cpuset.cpus
 	echo 0    	> cpuset.mems
-	echo 0-3    > phalloc.dram_bank
-	echo 0-3	> phalloc.dram_rank 
-	echo 0      > phalloc.colors
+	echo 0-15    > phalloc.bins
 	popd
     done
 }
@@ -80,43 +61,18 @@ set_corun_diffbank_cgroup()
 
     echo 0-3   	> cpuset.cpus
     echo 0    	> cpuset.mems
-    echo 0,1    > phalloc.dram_bank
-    echo 0-3   	> phalloc.dram_rank 
-    echo 0      > phalloc.colors
+    echo 0-11   > phalloc.bins
     popd
 }
 
-set_system_cgroup()
-{
-    mkdir -p /sys/fs/cgroup/system
-    pushd /sys/fs/cgroup/system
-    cat /sys/devices/system/cpu/online > cpuset.cpus || error "fail"
-    echo 0 > cpuset.mems
-
-    echo 0-3   	> cpuset.cpus
-    echo 0    	> cpuset.mems
-    echo 0-3    > phalloc.dram_bank
-    echo 0-3   	> phalloc.dram_rank 
-    echo 0      > phalloc.colors
-
-    for t in `cat /sys/fs/cgroup/tasks`; do
-	echo $t > tasks || echo "PID $t failed"
-    done 2> /dev/null
-    cat tasks
-    echo 1024 > cpu.shares
-    popd
-}
 
 init_system
-set_system_cgroup
+
 set_spec2006_cgroup
 set_corun_samebank_cgroup
 set_corun_diffbank_cgroup
 set_percore_cgroup
 
 echo "128" > /sys/kernel/debug/tracing/buffer_size_kb
-
 echo 1 > $DBGFS/debug_level
-for f in $DBGFS/dram_*; do 
-    echo $f `cat $f`
-done
+cat $DBGFS/phalloc_mask

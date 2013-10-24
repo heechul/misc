@@ -2,6 +2,7 @@
 DBGFS=/sys/kernel/debug/phalloc
 
 CH=1
+NDIMM=2
 
 if [ $CH -eq 1 ]; then
     echo "Single channel configuration"
