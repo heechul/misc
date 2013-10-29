@@ -35,7 +35,8 @@
  * Public Definitions
  **************************************************************************/
 #define PAGE_SIZE (2*1024*1024) /* Huge TLB */
-#define DEFAULT_DRAM_PAGE_SHIFT 13  /* DRAM page size = 8KB */
+#define DEFAULT_DRAM_PAGE_SHIFT 13
+
 #define CACHE_LINE_SIZE 64
 
 #define FATAL do { fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
@@ -170,9 +171,9 @@ int main(int argc, char* argv[])
 		off_idx ++;
 
 	list = &memchunk[off_idx];
-	for (i = 0; i < 32; i++) {
+	for (i = 0; i < 64; i++) {
 		int idx = i * PAGE_SIZE / 4;
-		if (i == 31)
+		if (i == 63)
 			list[idx] = 0;
 		else
 			list[idx] = (i+1) * PAGE_SIZE/4;
