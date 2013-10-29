@@ -16,23 +16,25 @@ set_cgroup_bins()
     bins=$1
     balance=$2
     log_echo "4B-[$bins]-($balance)"
-    echo $bins  > /sys/fs/cgroup/spec2006/phalloc.bins
+    echo $bins  > /sys/fs/cgroup/spec2006/palloc.bins
     echo $$ > /sys/fs/cgroup/spec2006/tasks
-    echo 2 > /sys/kernel/debug/phalloc/debug_level
-    echo $balance > /sys/kernel/debug/phalloc/alloc_balance
+    echo 2 > /sys/kernel/debug/palloc/debug_level
+    echo $balance > /sys/kernel/debug/palloc/alloc_balance
 }
 
 balance=0
-
 log_echo 'buddy-solo'
-echo 99 > /sys/kernel/debug/phalloc/debug_level
+echo 99 > /sys/kernel/debug/palloc/debug_level
 ./profile.sh 0
 
-log_echo "4 banks"
-log_echo '4B-HI-solo'
-set_cgroup_bins "0,4,8,12" $balance
-./profile.sh 0
-
-log_echo '4B-LO-solo'
+log_echo '4B-LO-solo($balance)'
 set_cgroup_bins "0-3" $balance
+./profile.sh 0
+
+log_echo '8B-LO-solo($balance)'
+set_cgroup_bins "0-7" $balance
+./profile.sh 0
+
+log_echo '16B-LO-solo($balance)'
+set_cgroup_bins "0-15" $balance
 ./profile.sh 0

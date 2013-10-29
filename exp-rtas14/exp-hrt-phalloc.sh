@@ -1,7 +1,7 @@
 #!/bin/bash
 . ./functions
 
-outputfile=hrt-phalloc.txt
+outputfile=hrt-palloc.txt
 
 set_cgroup()
 {

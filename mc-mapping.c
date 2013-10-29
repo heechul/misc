@@ -50,7 +50,7 @@
 /**************************************************************************
  * Global Variables
  **************************************************************************/
-static int g_mem_size = 32 * PAGE_SIZE;
+static int g_mem_size = 64 * PAGE_SIZE;
 static int* list;
 static int next;
 

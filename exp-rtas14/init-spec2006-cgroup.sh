@@ -2,11 +2,28 @@
 DBGFS=/sys/kernel/debug/phalloc
 
 CH=1
-NDIMM=2
+NDIMM=1
+
+error()
+{
+    echo "ERR: $*"
+    exit
+}
 
 if [ $CH -eq 1 ]; then
-    echo "Single channel configuration"
-    MASK=0x183000
+    if [ $NDIMM -eq 1 ]; then
+	echo "1ch-1DIMM"
+	MASK=0x00183000   # bits: 12, 13, 19, 20
+    elif [ $NDIMM -eq 2 ]; then
+	echo "1ch-2DIMM"
+	MASK=0x00107000   # bits: 12, 13, 14, 20, 32(?)
+    fi
+elif [ $CH -eq 2 ]; then
+    if [ $NDIMM -eq 2 ]; then
+	MASK=0x00116040   # bits:  6, 13, 14, 16, 20
+    else
+	error "Not possible CH($CH) and NDIMM($NDIMM)"
+    fi
 fi
 
 init_system()

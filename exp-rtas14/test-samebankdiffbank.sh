@@ -11,7 +11,7 @@ if [ ! -d "/sys/fs/cgroup/corun_samebank" ]; then
 fi
 echo 0-3 > /sys/fs/cgroup/corun_samebank/cpuset.cpus
 echo 0 > /sys/fs/cgroup/corun_samebank/cpuset.mems
-echo 0 > /sys/fs/cgroup/corun_samebank/phalloc.bins
+echo 0 > /sys/fs/cgroup/corun_samebank/palloc.bins
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
 
 killall latency	
@@ -32,7 +32,7 @@ echo "samebank [0] experiments"
 killall latency	
 echo "diffbank B1-15"
 echo 0-3 > /sys/fs/cgroup/corun_diffbank/cpuset.cpus
-echo 1-15 > /sys/fs/cgroup/corun_diffbank/phalloc.bins
+echo 1-15 > /sys/fs/cgroup/corun_diffbank/palloc.bins
 
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
 ./latency -c 0 -i 100 2> /dev/null | grep bandwidth
@@ -56,7 +56,7 @@ echo $$ > /sys/fs/cgroup/corun_samebank/tasks
 killall latency	
 echo "diffbank B1"
 echo 0-3 > /sys/fs/cgroup/corun_diffbank/cpuset.cpus
-echo 1 > /sys/fs/cgroup/corun_diffbank/phalloc.bins
+echo 1 > /sys/fs/cgroup/corun_diffbank/palloc.bins
 
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
 ./latency -c 0 -i 100 2> /dev/null | grep bandwidth
