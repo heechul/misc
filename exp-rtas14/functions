@@ -1,5 +1,14 @@
 #!/bin/bash
 
+export PATH=$HOME/bin:$PATH:..
+
+# system info
+SYSTEM=T61
+CH=1
+NDIMM=1
+NCPU=`cat /proc/cpuinfo  | grep processor | wc -l`
+MAXCPU=`expr $NCPU - 1`
+
 error()
 {
     echo "ERR: $*"
@@ -666,7 +675,6 @@ init_system()
     echo "one time things"
     echo 8 8 8 8 > /proc/sys/kernel/printk
     echo 2048 > /sys/kernel/debug/tracing/buffer_size_kb
-    export PATH=$HOME/bin:$PATH
     # init_cgroup
     stop_services
     check_root

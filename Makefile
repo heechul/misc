@@ -1,4 +1,4 @@
-CC=clang
+CC=gcc
 PGMS=mc-mapping latency bandwidth fps mlp pagetype devmem2 hrt
 
 all: $(PGMS)
