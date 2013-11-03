@@ -2,7 +2,7 @@
 DBGFS=/sys/kernel/debug/phalloc
 
 # system info
-SYSTEM=T61
+SYSTEM=icecream
 CH=1
 NDIMM=1
 
