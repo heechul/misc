@@ -93,6 +93,7 @@ int main(int argc, char* argv[])
         cpu_set_t cmask;
 	int num_processors;
 	int cpuid = 0;
+	int use_dev_mem = 0;
 
 	int *memchunk = NULL;
 	int opt, prio;
@@ -103,9 +104,6 @@ int main(int argc, char* argv[])
 	int offset = 0;
 
 	int page_shift = DEFAULT_DRAM_PAGE_SHIFT;
-	int fd = -1;
-
-	void *addr = (void *) 0x1000000080000000;
 
 	/*
 	 * get command line options 
@@ -120,6 +118,9 @@ int main(int argc, char* argv[])
 			break;
 		case 'm': /* set memory size */
 			g_mem_size = 1024 * strtol(optarg, NULL, 0);
+			break;
+		case 'x': /* mmap to /dev/mem, owise use hugepage */
+			use_dev_mem = 1;
 			break;
 		case 'c': /* set CPU affinity */
 			cpuid = strtol(optarg, NULL, 0);
@@ -146,18 +147,31 @@ int main(int argc, char* argv[])
 
 	}
 
-	fd = open("/dev/mem", O_RDWR | O_SYNC);
-	if (fd < 0) {
-		perror("Open failed");
-		exit(1);
-	}
-
 	/* alloc memory. align to a page boundary */
-	memchunk = mmap(0,
-			g_mem_size + (1<<page_shift),
-			PROT_READ | PROT_WRITE, 
-			MAP_SHARED, 
-			fd, (off_t)addr);
+	if (use_dev_mem) {
+		int fd = open("/dev/mem", O_RDWR | O_SYNC);
+		void *addr = (void *) 0x1000000080000000;
+
+
+		if (fd < 0) {
+			perror("Open failed");
+			exit(1);
+		}
+		
+		memchunk = mmap(0,
+				g_mem_size + (1<<page_shift),
+				PROT_READ | PROT_WRITE, 
+				MAP_SHARED, 
+				fd, (off_t)addr);
+	} else {
+		size_t size = g_mem_size + (1<<page_shift);
+		size = (size + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE;
+
+		memchunk = mmap(0, size,
+				PROT_READ | PROT_WRITE, 
+				MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
+				-1, 0);
+	}
 
 	if (memchunk == MAP_FAILED) {
 		perror("failed to alloc");
