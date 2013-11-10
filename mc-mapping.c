@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2010  Heechul Yun <heechul@illinois.edu> 
+ * Copyright (C) 2013  Heechul Yun <heechul@illinois.edu> 
  *
  * This file is distributed under the University of Illinois Open Source
  * License. See LICENSE.TXT for details.
@@ -34,7 +34,7 @@
 /**************************************************************************
  * Public Definitions
  **************************************************************************/
-#define PAGE_SIZE (2*1024*1024) /* Huge TLB */
+#define PAGE_SIZE (2*1024*1024)
 #define DEFAULT_DRAM_PAGE_SHIFT 13
 
 #define CACHE_LINE_SIZE 64

@@ -1,5 +1,5 @@
 #!/bin/bash
-DBGFS=/sys/kernel/debug/phalloc
+DBGFS=/sys/kernel/debug/palloc
 
 # system info
 SYSTEM=icecream
@@ -39,7 +39,7 @@ init_system()
     if !(mount | grep cgroup); then
 	mount -t cgroup xxx /sys/fs/cgroup
     fi
-    echo $MASK > $DBGFS/phalloc_mask
+    echo $MASK > $DBGFS/palloc_mask
     echo flush > $DBGFS/control
 }
 
@@ -96,4 +96,4 @@ set_percore_cgroup
 
 echo "128" > /sys/kernel/debug/tracing/buffer_size_kb
 echo 1 > $DBGFS/debug_level
-cat $DBGFS/phalloc_mask
+cat $DBGFS/palloc_mask

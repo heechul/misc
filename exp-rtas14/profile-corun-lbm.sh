@@ -2,7 +2,7 @@
 
 [ -z "$1" ] && targetcpu=1 || targetcpu=$1
 
-. functions 
+. ./functions 
 
 # for bench in $spec2006_xeon_all; do
 # done
@@ -10,7 +10,7 @@
 
 bench=470.lbm
 while true; do
-    run_bench $bench $targetcpu
+    run_bench $bench $targetcpu || exit
     [ -f "DONE" ] && break
 done
 echo done

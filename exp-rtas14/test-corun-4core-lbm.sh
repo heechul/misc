@@ -1,7 +1,7 @@
 #!/bin/bash
 
+# .bash_profile. ~/.bash_profile
 . ./functions
-. ~/.bash_profile
 
 outputfile=profile.txt
 repeat=1
@@ -42,7 +42,7 @@ sleep 1
 log_echo '4B-diffbank-HI-w/lbm'
 cpu=1
 for bins in "1,5,9,13" "2,6,10,14" "3,7,11,15"; do
-    echo $bins > /sys/fs/cgroup/core$cpu/phlloc.bins
+    echo $bins > /sys/fs/cgroup/core$cpu/palloc.bins
     echo $$ > /sys/fs/cgroup/core$cpu/tasks
     echo 2 > /sys/kernel/debug/palloc/debug_level
     ./profile-corun-lbm.sh $cpu &
