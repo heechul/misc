@@ -1,10 +1,14 @@
 CC=gcc
-PGMS=mc-mapping latency bandwidth fps mlp pagetype devmem2 hrt
+PGMS=mc-mapping latency bandwidth fps mlp pagetype devmem2 hrt hrt-rand
+
+CFLAGS=-Wall
 
 all: $(PGMS)
 
 hrt: hrt.c
-	$(CC) $< -O2 -o $@ -lrt
+	$(CC) $(CFLAGS) $< -O2 -o $@ -lrt 
+hrt-rand: hrt-rand.c
+	$(CC) $(CFLAGS) $< -O2 -o $@ -lrt
 mlp: mlp.c
 	$(CC) $< -O2 -o $@ -lrt -g
 mc-mapping: mc-mapping.c

@@ -63,8 +63,6 @@ struct item {
 int g_mem_size = 16384*1024;
 volatile int quit_signal;
 
-// static int mark_fd = -1;
-// static __thread char buff[BUFSIZ+1];
 
 /**************************************************************************
  * Public Function Prototypes
@@ -150,8 +148,6 @@ int main(int argc, char* argv[])
 	struct item *list[NUM_FRAMES];
 	int workingset_size = 1024;
 
-	float interval_ms = 0.0;
-
 	int i, j;
 	struct list_head head[NUM_FRAMES];
 	struct list_head *pos;
@@ -160,8 +156,11 @@ int main(int argc, char* argv[])
 	int64_t avglat;
 	uint64_t readsum = 0, cnt;
 	int serial = 0;
-	int repeat = 1;
 	int cpuid = 0;
+
+	int interval = 100;
+	int repeat = 1;
+
 	struct sched_param param;
         cpu_set_t cmask;
 	int num_processors;
@@ -217,9 +216,9 @@ int main(int argc, char* argv[])
 			fprintf(stderr, "repeat=%d\n", repeat);
 			break;
 
-		case 'I': /* interval (period) */
-			interval_ms = strtof(optarg, NULL);
-			fprintf(stderr, "I(interval)=%f(ms)\n", interval_ms);
+		case 'I': /* interval (#of access) */
+			interval = strtof(optarg, NULL);
+			fprintf(stderr, "I(interval)=%d\n", interval);
 			break;
 
 		case 'h':
@@ -271,39 +270,34 @@ int main(int argc, char* argv[])
 	}
 	ftrace_write("PGM: end permutation\n");
 
-	/* add marker */
 	/* actual access */
 	nsdiff = 0; j = 0; i = 0; 
 	quit_signal = 0;
 	cnt = 0;
 	ftrace_write("PGM: begin main loop\n");
 	clock_gettime(CLOCK_REALTIME, &start);
+	clock_gettime(CLOCK_REALTIME, &end);
+	
+	printf("measurement overhead: %ld ns\n", get_elapsed(&start, &end));
 
+	uint64_t tmpdiff = 0;
+	clock_gettime(CLOCK_REALTIME, &start);
 	while (1) {
-		uint64_t tmpdiff;
+
 		list_for_each(pos, &head[i % NUM_FRAMES]) {
 			struct item *tmp = list_entry(pos, struct item, list);
 			readsum += tmp->data;
 			cnt++;
+			if (cnt % interval == 0) {
+				clock_gettime(CLOCK_REALTIME, &end);
+				tmpdiff = get_elapsed(&start, &end);
+				printf("%ld %.2f\n", cnt/interval, (double)tmpdiff/1000);
+				clock_gettime(CLOCK_REALTIME, &start);
+				nsdiff += tmpdiff;
+			}
+			if (cnt / interval == repeat || quit_signal)
+				goto out;
 		}
-		clock_gettime(CLOCK_REALTIME, &end);
-		tmpdiff = get_elapsed(&start, &end);
-		ftrace_write("PGM: iter %d took %lld ns\n", i, tmpdiff);
-
-		printf("%4d %.2f\n", i, (double) tmpdiff/1000000);
-		fprintf(stderr, "%4d %.2f ---------------------------------\n",
-			i, (double) tmpdiff/1000000);
-
-		nsdiff += tmpdiff;
-
-		if (++i == repeat || quit_signal)
-			goto out;
-
-		double remain_us = (interval_ms * 1000 - tmpdiff / 1000);
-		if (remain_us > 0) {
-			usleep((useconds_t)remain_us);
-		}
-		clock_gettime(CLOCK_REALTIME, &start);
 	}
 out:
 	avglat = (int64_t)(nsdiff/cnt); 
