@@ -73,7 +73,7 @@ test_isolation()
     hw=$1
     do_hrt_test hrt 470.lbm buddy    $hw-out-buddy-corun
     do_hrt_test hrt 470.lbm diffbank $hw-out-diffbank-corun
-    do_hrt_test hrt 470.lbm samebank $hw-out-samebank-corun
+#    do_hrt_test hrt 470.lbm samebank $hw-out-samebank-corun
     do_hrt_test hrt none    solo     $hw-out-buddy-solo 
 }
 

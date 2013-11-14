@@ -278,7 +278,7 @@ int main(int argc, char* argv[])
 	clock_gettime(CLOCK_REALTIME, &start);
 	clock_gettime(CLOCK_REALTIME, &end);
 	
-	printf("measurement overhead: %ld ns\n", get_elapsed(&start, &end));
+	fprintf(stderr, "measurement overhead: %ld ns\n", get_elapsed(&start, &end));
 
 	uint64_t tmpdiff = 0;
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -291,7 +291,10 @@ int main(int argc, char* argv[])
 			if (cnt % interval == 0) {
 				clock_gettime(CLOCK_REALTIME, &end);
 				tmpdiff = get_elapsed(&start, &end);
-				printf("%ld %.2f\n", cnt/interval, (double)tmpdiff/1000);
+				int64_t idx = cnt / interval;
+				double  val = (double)tmpdiff/1000;
+				printf("%ld %.2f\n", idx, val);
+				// fprintf(stderr, "%ld %.2f\n", idx, val);
 				clock_gettime(CLOCK_REALTIME, &start);
 				nsdiff += tmpdiff;
 			}
