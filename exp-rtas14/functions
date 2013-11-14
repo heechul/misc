@@ -3,7 +3,6 @@
 export PATH=$HOME/bin:$PATH:..
 
 # system info
-SYSTEM=T61
 CH=1
 NDIMM=1
 NCPU=`cat /proc/cpuinfo  | grep processor | wc -l`

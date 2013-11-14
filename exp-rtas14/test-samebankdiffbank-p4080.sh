@@ -2,6 +2,8 @@
 
 . functions
 
+PATH=../:$PATH
+
 outputfile=log.txt
 
 set_cpus "1 1 1 1"
@@ -20,28 +22,28 @@ echo $$ > /sys/fs/cgroup/corun_samebank/tasks
 
 killall latency	
 echo "samebank"
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
-./latency -c 1 -i 1000000000 >& /dev/null &
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 1 -i 1000000000 >& /dev/null &
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 	
-./latency -c 2 -i 1000000000 >& /dev/null &
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 2 -i 1000000000 >& /dev/null &
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 	
-./latency -c 3 -i 1000000000 >& /dev/null &
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 3 -i 1000000000 >& /dev/null &
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
-./latency -c 4 -i 1000000000 >& /dev/null &
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 4 -i 1000000000 >& /dev/null &
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
-./latency -c 5 -i 1000000000 >& /dev/null &
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 5 -i 1000000000 >& /dev/null &
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
-./latency -c 6 -i 1000000000 >& /dev/null &
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 6 -i 1000000000 >& /dev/null &
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
-./latency -c 7 -i 1000000000 >& /dev/null &
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 7 -i 1000000000 >& /dev/null &
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 
 killall latency	
@@ -52,42 +54,42 @@ echo 0,1 > /sys/fs/cgroup/corun_diffbank/phdusa.dram_rank
 echo 0 > /sys/fs/cgroup/corun_diffbank/phdusa.colors
 
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 1 -i 1000000000 >& /dev/null &
+latency -c 1 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 2 -i 1000000000 >& /dev/null &
+latency -c 2 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 3 -i 1000000000 >& /dev/null &
+latency -c 3 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 4 -i 1000000000 >& /dev/null &
+latency -c 4 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 5 -i 1000000000 >& /dev/null &
+latency -c 5 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 6 -i 1000000000 >& /dev/null &
+latency -c 6 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 7 -i 1000000000 >& /dev/null &
+latency -c 7 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 
 killall latency	
@@ -98,40 +100,40 @@ echo 0 > /sys/fs/cgroup/corun_diffbank/phdusa.dram_rank
 echo 0 > /sys/fs/cgroup/corun_diffbank/phdusa.colors
 
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 1 -i 1000000000 >& /dev/null &
+latency -c 1 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 2 -i 1000000000 >& /dev/null &
+latency -c 2 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 3 -i 1000000000 >& /dev/null &
+latency -c 3 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 4 -i 1000000000 >& /dev/null &
+latency -c 4 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 5 -i 1000000000 >& /dev/null &
+latency -c 5 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 6 -i 1000000000 >& /dev/null &
+latency -c 6 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
 echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-./latency -c 7 -i 1000000000 >& /dev/null &
+latency -c 7 -i 1000000000 >& /dev/null &
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-./latency -c 0 -i 100 2> /dev/null | grep bandwidth
+latency -c 0 -i 100 2> /dev/null | grep bandwidth
 
