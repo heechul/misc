@@ -11,6 +11,7 @@
 /**************************************************************************
  * Conditional Compilation Options
  **************************************************************************/
+// #define USE_RDTSC 1
 
 /**************************************************************************
  * Included Files
@@ -125,6 +126,20 @@ uint64_t get_elapsed(struct timespec *start, struct timespec *end)
 
 }
 
+static __inline__ unsigned long rdtsc(void)
+{
+	unsigned a, d; 
+	asm volatile("rdtsc" : "=a" (a), "=d" (d)); 
+	return ((unsigned long)a) | (((unsigned long)d) << 32); 
+}
+
+static __inline__ unsigned long long rdtsc_v1(void)
+{
+	unsigned long long int x;
+	__asm__ volatile (".byte 0x0f, 0x31" : "=A" (x));
+	return x;
+}
+
 void usage(int argc, char *argv[])
 {
 	printf("Usage: $ %s [<option>]*\n\n", argv[0]);
@@ -151,9 +166,8 @@ int main(int argc, char* argv[])
 	int i, j;
 	struct list_head head[NUM_FRAMES];
 	struct list_head *pos;
-	struct timespec start, end;
-	uint64_t nsdiff;
-	int64_t avglat;
+	double nsdiff;
+	double avglat;
 	uint64_t readsum = 0, cnt;
 	int serial = 0;
 	int cpuid = 0;
@@ -275,13 +289,21 @@ int main(int argc, char* argv[])
 	quit_signal = 0;
 	cnt = 0;
 	ftrace_write("PGM: begin main loop\n");
+	double tmpdiff = 0;
+#if USE_RDTSC
+	unsigned long start_cycle, dur_cycle;
+	start_cycle = rdtsc();
+	dur_cycle = rdtsc() - start_cycle;
+	fprintf(stderr, "rdtsc() overhead: %ld cycles (%.2f ns)\n", 
+		dur_cycle, (double)dur_cycle / 2.8 );
+	start_cycle = rdtsc();
+#else
+	struct timespec start, end;
 	clock_gettime(CLOCK_REALTIME, &start);
 	clock_gettime(CLOCK_REALTIME, &end);
-	
-	fprintf(stderr, "measurement overhead: %ld ns\n", get_elapsed(&start, &end));
-
-	uint64_t tmpdiff = 0;
+	fprintf(stderr, "clock_gettime() overhead: %ld ns\n", get_elapsed(&start, &end));
 	clock_gettime(CLOCK_REALTIME, &start);
+#endif
 	while (1) {
 
 		list_for_each(pos, &head[i % NUM_FRAMES]) {
@@ -289,26 +311,40 @@ int main(int argc, char* argv[])
 			readsum += tmp->data;
 			cnt++;
 			if (cnt % interval == 0) {
+#if USE_RDTSC
+				dur_cycle = rdtsc() - start_cycle - 24;
+				tmpdiff = (double)dur_cycle / 2.8;
+#else
 				clock_gettime(CLOCK_REALTIME, &end);
-				tmpdiff = get_elapsed(&start, &end);
+				tmpdiff = (double)get_elapsed(&start, &end);
+#endif
 				int64_t idx = cnt / interval;
-				double  val = (double)tmpdiff/1000;
+				double  val = tmpdiff/1000;
 				printf("%ld %.2f\n", idx, val);
-				// fprintf(stderr, "%ld %.2f\n", idx, val);
-				clock_gettime(CLOCK_REALTIME, &start);
 				nsdiff += tmpdiff;
+
+				if (cnt % (interval * repeat / 100) == 0)
+					usleep(1000);
+				// fprintf(stderr, "%ld %.2f\n", idx, val);
+#if USE_RDTSC
+				start_cycle = rdtsc();
+#else
+				clock_gettime(CLOCK_REALTIME, &start);
+#endif
+	
 			}
 			if (cnt / interval == repeat || quit_signal)
 				goto out;
 		}
 	}
 out:
-	avglat = (int64_t)(nsdiff/cnt); 
-	fprintf(stderr, "duration %lldus\naverage %lldns | ", 
-		(long long)nsdiff/1000, (long long)avglat);
-	fprintf(stderr, "bandwidth %lld MB (%lld MiB)/s\n", 
-		(long long)64*1000/avglat, 
-		(long long)64*1000000000/avglat/1024/1024);
+	avglat = nsdiff/cnt;
+
+	fprintf(stderr, "duration %.1fus\naverage %.0fns | ", 
+		nsdiff/1000, avglat);
+	fprintf(stderr, "bandwidth %.1f MB (%.1f MiB)/s\n", 
+		(double)64*1000/avglat, 
+		(double)64*1000000000/avglat/1024/1024);
 	fprintf(stderr, "readsum  %lld\n", (unsigned long long)readsum);
 
 	return 0;
