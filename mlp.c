@@ -31,14 +31,11 @@
 #include <sys/resource.h>
 #include <assert.h>
 
-#include "list.h"
-
 /**************************************************************************
  * Public Definitions
  **************************************************************************/
 #define MAX_MLP 32
-#define PAGE_SIZE (2*1024*1024) /* Huge TLB */
-#define DEFAULT_DRAM_PAGE_SHIFT 12  /* DRAM page size = 8KB */
+#define CHUNK_SIZE (2*1024*1024) /* Huge TLB */
 #define CACHE_LINE_SIZE 64
 
 #define FATAL do { fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
@@ -51,7 +48,7 @@
 /**************************************************************************
  * Global Variables
  **************************************************************************/
-static int g_mem_size = 64 * PAGE_SIZE;
+static int g_mem_size = 32 * CHUNK_SIZE;
 static int* list[MAX_MLP];
 static int next[MAX_MLP];
 
@@ -161,27 +158,20 @@ int main(int argc, char* argv[])
 
 	int *memchunk = NULL;
 	int opt, prio;
-	int i,j;
+	int i,j, k;
 
 	int repeat = 1000;
 
 	int mlp = 1;
-	int offset = 0;
 
-	int page_shift = DEFAULT_DRAM_PAGE_SHIFT;
 	int fd = -1;
 
+	int use_hugepage = 0;
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "b:o:m:c:i:l:h")) != -1) {
+	while ((opt = getopt(argc, argv, "b:o:m:c:i:l:ht")) != -1) {
 		switch (opt) {
-		case 'b': /* bank start bit */
-			page_shift = strtol(optarg, NULL, 0);
-			break;
-		case 'o': /* bank offset (multiple of page_shift)*/
-			offset = strtol(optarg, NULL, 0);
-			break;
 		case 'm': /* set memory size */
 			g_mem_size = 1024 * strtol(optarg, NULL, 0);
 			break;
@@ -204,50 +194,53 @@ int main(int argc, char* argv[])
 			break;
 		case 'i': /* iterations */
 			repeat = strtol(optarg, NULL, 0);
-			fprintf(stderr, "repeat=%d\n", repeat);
+			// fprintf(stderr, "repeat=%d\n", repeat);
 			break;
 		case 'l': /* MLP (memory level parallelism) */
 			mlp = strtol(optarg, NULL, 0);
+			break;
+		case 't':
+			use_hugepage = 1; 
 			break;
 		}
 
 	}
 
 	/* alloc memory. align to a page boundary */
-	memchunk = mmap(0,
-			g_mem_size,
-			PROT_READ | PROT_WRITE, 
-			MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
-			fd, 0);
+	if (use_hugepage) {
+		memchunk = mmap(0,
+				g_mem_size,
+				PROT_READ | PROT_WRITE, 
+				MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
+				fd, 0);
+	} else {
+		memchunk = malloc(g_mem_size);
+	}
 
 	if (memchunk == MAP_FAILED) {
 		perror("failed to alloc");
 		exit(1);
 	}
 
-	assert((1<<page_shift) < PAGE_SIZE);
-
 	/* initialize data */
-	for (i = 0; i < g_mem_size / PAGE_SIZE; i++) {
-		for (j = 0; j < PAGE_SIZE; j+= (1<<page_shift) ) {
-			int idx = (i*PAGE_SIZE + j)/4;
-			if (i == (g_mem_size / PAGE_SIZE - 1))
-				memchunk[idx] = 0;
-			else
-				memchunk[idx] = (i+1)*PAGE_SIZE/4;
+	int j_shift = 12, i_bits=2;
+	int i_shift = 19, j_bits=2;
+	for (i = 0; i < 1<<i_bits; i++) {
+		for (j = 0; j < 1<<j_bits; j++) {
+			int idx = i * 4 + j;
+			int off = (j << j_shift) | (i << i_shift);
+			printf("%2d 0x%08x\n", idx, off);
+			list[idx] = &memchunk[off/4];
+			for (k = 0; k < g_mem_size / CHUNK_SIZE; k++) {
+				int addr = (k * CHUNK_SIZE);
+				int addr_next = (addr + CHUNK_SIZE) % g_mem_size;
+				list[idx][addr/4] = addr_next/4;
+			}
 		}
 	}
 
-	for (i = 0; i < mlp; i++) {
-		int idx = (((i + offset) * (1<<page_shift)) % PAGE_SIZE)/4;
-		// list[i] = &memchunk[(i * DRAM_PAGE_SIZE)/4];
-		list[i] = &memchunk[idx];
-		next[i] = 0;
-		printf("list[%d]=%p\n", i, list[i]);
-	}
-
-	printf("offset: %d, mlp: %d, pshift: %d\n", offset, mlp, page_shift);
-
+	printf("i_shift=$d($d), j_shift=$d($d), mlp: %d\n",
+	       i_shift, i_bits, j_shift, j_bits, mlp);
 #if 0
         param.sched_priority = 10;
         if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
