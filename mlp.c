@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <inttypes.h>
@@ -148,6 +149,20 @@ int run(int iter, int mlp)
 	return cnt;
 }
 
+int run_banks(int iter, int nbanks, int *bank)
+{
+	int i, j;
+	int cnt = 0;
+
+	for (i = 0; i < iter; i++) {
+		for (j = 0; j < nbanks; j++) {
+			next[bank[j]] = list[bank[j]][next[bank[j]]];
+		}
+		cnt += nbanks;
+	}
+	return cnt;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -159,19 +174,28 @@ int main(int argc, char* argv[])
 	int *memchunk = NULL;
 	int opt, prio;
 	int i,j, k;
-
+	int banks[MAX_MLP] = {0};
 	int repeat = 1000;
 
 	int mlp = 1;
 
 	int fd = -1;
 
-	int use_hugepage = 0;
+	int use_hugepage = 1;
 	/*
 	 * get command line options 
 	 */
 	while ((opt = getopt(argc, argv, "b:o:m:c:i:l:ht")) != -1) {
 		switch (opt) {
+		case 'b': /* selected banks */
+			printf("args: %s\n", optarg);
+			char *tok = strtok(optarg, ","); 
+			mlp = 0;
+			while (tok) {
+				banks[mlp++] = strtol(tok, NULL, 0);
+				tok = strtok(NULL, ",");
+			}
+			break;
 		case 'm': /* set memory size */
 			g_mem_size = 1024 * strtol(optarg, NULL, 0);
 			break;
@@ -196,14 +220,10 @@ int main(int argc, char* argv[])
 			repeat = strtol(optarg, NULL, 0);
 			// fprintf(stderr, "repeat=%d\n", repeat);
 			break;
-		case 'l': /* MLP (memory level parallelism) */
-			mlp = strtol(optarg, NULL, 0);
-			break;
 		case 't':
-			use_hugepage = 1; 
+			use_hugepage = (use_hugepage) ? 0: 1;
 			break;
 		}
-
 	}
 
 	/* alloc memory. align to a page boundary */
@@ -222,7 +242,7 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	/* initialize data */
+	/* initialize data. icecream, 1CH-1DIMM (16 banks) */
 	int j_shift = 12, i_bits=2;
 	int i_shift = 19, j_bits=2;
 	for (i = 0; i < 1<<i_bits; i++) {
@@ -239,8 +259,8 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	printf("i_shift=$d($d), j_shift=$d($d), mlp: %d\n",
-	       i_shift, i_bits, j_shift, j_bits, mlp);
+	printf("i_shift=%d(%d), j_shift=%d(%d), mlp: %d, use_hugepage = %d\n",
+	       i_shift, i_bits, j_shift, j_bits, mlp, use_hugepage);
 #if 0
         param.sched_priority = 10;
         if(sched_setscheduler(0, SCHED_FIFO, &param) == -1) {
@@ -252,8 +272,8 @@ int main(int argc, char* argv[])
 	clock_gettime(CLOCK_REALTIME, &start);
 
 	/* actual access */
-	int naccess = run(repeat, mlp);
-
+	// int naccess = run(repeat, mlp);
+	int naccess = run_banks(repeat, mlp, banks);
 	clock_gettime(CLOCK_REALTIME, &end);
 
 	int64_t nsdiff = get_elapsed(&start, &end);
