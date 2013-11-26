@@ -184,11 +184,14 @@ int main(int argc, char* argv[])
 			break;
 		case 'c': /* set CPU affinity */
 			cpuid = strtol(optarg, NULL, 0);
+			fprintf(stderr, "cpuid: %d\n", cpuid);
 			num_processors = sysconf(_SC_NPROCESSORS_CONF);
 			CPU_ZERO(&cmask);
 			CPU_SET(cpuid % num_processors, &cmask);
-			if (sched_setaffinity(0, num_processors, &cmask) < 0)
+			if (sched_setaffinity(0, num_processors, &cmask) < 0) {
 				perror("error");
+				exit(1);
+			}
 			else
 				fprintf(stderr, "assigned to cpu %d\n", cpuid);
 			break;
