@@ -36,11 +36,12 @@
  **************************************************************************/
 #define L3_SIZE       (8*1024*1024)         // 8MB in E3-1230
 #define L3_NUM_WAYS   16                    // cat /sys/devices/system/cpu/cpu0/cache/index3/ways..
-#define L3_WAY_SIZE   (L3_SIZE/L3_NUM_WAYS) 
+#define L3_WAY_SIZE   (L3_SIZE/L3_NUM_WAYS)
 #define HUGEPAGE_SIZE (2048*1024)           // 2MB in X86_64
 #define CACHE_LINE_SIZE 64
 
 #define NUM_ENTRIES   (L3_NUM_WAYS * 2)     // # of list entries to iterate
+#define ENTRY_DIST    HUGEPAGE_SIZE
 
 #define MAX(a,b) ((a>b)?(a):(b))
 #define CEIL(val,unit) (((val + unit - 1)/unit)*unit)
@@ -55,7 +56,7 @@
 /**************************************************************************
  * Global Variables
  **************************************************************************/
-static int g_mem_size = NUM_ENTRIES * L3_WAY_SIZE;
+static int g_mem_size = NUM_ENTRIES * ENTRY_DIST;
 static int* list;
 static int next;
 
@@ -182,20 +183,17 @@ int main(int argc, char* argv[])
 	/* initialize data */
 	int off_idx = (1<<page_shift) / 4;
 	
-	if ((1<<page_shift) >= L3_WAY_SIZE) /* FIXME: WHAT IS THIS? */
-		off_idx ++; 
-
 	if (xor_page_shift > 0) {
 		off_idx = ((1<<page_shift) + (1<<xor_page_shift)) / 4;
 	}
 
 	list = &memchunk[off_idx];
 	for (i = 0; i < NUM_ENTRIES; i++) {
-		int idx = i * L3_WAY_SIZE / 4;
+		int idx = i * ENTRY_DIST / 4;
 		if (i == (NUM_ENTRIES - 1))
 			list[idx] = 0;
 		else
-			list[idx] = (i+1) * L3_WAY_SIZE/4;
+			list[idx] = (i+1) * ENTRY_DIST/4;
 	}
 	next = 0;
 	printf("pshift: %d, XOR-pshift: %d\n", page_shift, xor_page_shift);
