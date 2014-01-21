@@ -34,15 +34,19 @@
 /**************************************************************************
  * Public Definitions
  **************************************************************************/
-#define PAGE_SIZE (2*1024*1024)
-#define DEFAULT_DRAM_PAGE_SHIFT 13
-
+#define L3_SIZE       (8*1024*1024)         // 8MB in E3-1230
+#define L3_NUM_WAYS   16                    // cat /sys/devices/system/cpu/cpu0/cache/index3/ways..
+#define L3_WAY_SIZE   (L3_SIZE/L3_NUM_WAYS) 
+#define HUGEPAGE_SIZE (2048*1024)           // 2MB in X86_64
 #define CACHE_LINE_SIZE 64
+
+#define NUM_ENTRIES   (L3_NUM_WAYS * 2)     // # of list entries to iterate
+
+#define MAX(a,b) ((a>b)?(a):(b))
+#define CEIL(val,unit) (((val + unit - 1)/unit)*unit)
 
 #define FATAL do { fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
    __LINE__, __FILE__, errno, strerror(errno)); exit(1); } while(0)
-
-#define MAX(a,b) ((a>b)?(a):(b))
 
 /**************************************************************************
  * Public Types
@@ -51,7 +55,7 @@
 /**************************************************************************
  * Global Variables
  **************************************************************************/
-static int g_mem_size = 64 * PAGE_SIZE;
+static int g_mem_size = NUM_ENTRIES * L3_WAY_SIZE;
 static int* list;
 static int next;
 
@@ -101,9 +105,8 @@ int main(int argc, char* argv[])
 
 	int repeat = 1000;
 
-	int offset = 0;
 
-	int page_shift = DEFAULT_DRAM_PAGE_SHIFT;
+	int page_shift = 0;
 	int xor_page_shift = 0;
 
 	/*
@@ -116,9 +119,6 @@ int main(int argc, char* argv[])
 			break;
 		case 's': /* xor-bank bit */
 			xor_page_shift = strtol(optarg, NULL, 0);
-			break;
-		case 'o': /* bank offset */
-			offset = strtol(optarg, NULL, 0);
 			break;
 		case 'm': /* set memory size */
 			g_mem_size = 1024 * strtol(optarg, NULL, 0);
@@ -151,6 +151,7 @@ int main(int argc, char* argv[])
 
 	}
 
+	g_mem_size += (1 << page_shift);
 	/* alloc memory. align to a page boundary */
 	if (use_dev_mem) {
 		int fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -162,16 +163,12 @@ int main(int argc, char* argv[])
 			exit(1);
 		}
 		
-		memchunk = mmap(0,
-				g_mem_size + (1<<page_shift),
+		memchunk = mmap(0, g_mem_size,
 				PROT_READ | PROT_WRITE, 
 				MAP_SHARED, 
 				fd, (off_t)addr);
 	} else {
-		size_t size = g_mem_size + (1<<page_shift);
-		size = (size + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE;
-
-		memchunk = mmap(0, size,
+		memchunk = mmap(0, CEIL(g_mem_size, HUGEPAGE_SIZE),
 				PROT_READ | PROT_WRITE, 
 				MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
 				-1, 0);
@@ -183,25 +180,25 @@ int main(int argc, char* argv[])
 	}
 
 	/* initialize data */
-	int off_idx = offset * (1<<page_shift) / 4;
+	int off_idx = (1<<page_shift) / 4;
 	
-	/* if ((1<<page_shift) >= PAGE_SIZE) */
-	/* 	off_idx ++; */
+	if ((1<<page_shift) >= L3_WAY_SIZE) /* FIXME: WHAT IS THIS? */
+		off_idx ++; 
 
 	if (xor_page_shift > 0) {
-		off_idx = offset * ((1<<page_shift) + (1<<xor_page_shift)) / 4;
+		off_idx = ((1<<page_shift) + (1<<xor_page_shift)) / 4;
 	}
 
 	list = &memchunk[off_idx];
-	for (i = 0; i < 32; i++) {
-		int idx = i * PAGE_SIZE / 4;
-		if (i == 31)
+	for (i = 0; i < NUM_ENTRIES; i++) {
+		int idx = i * L3_WAY_SIZE / 4;
+		if (i == (NUM_ENTRIES - 1))
 			list[idx] = 0;
 		else
-			list[idx] = (i+1) * PAGE_SIZE/4;
+			list[idx] = (i+1) * L3_WAY_SIZE/4;
 	}
 	next = 0;
-	printf("offset: %d, pshift: %d, XOR-pshift: %d\n", offset, page_shift, xor_page_shift);
+	printf("pshift: %d, XOR-pshift: %d\n", page_shift, xor_page_shift);
 
 #if 0
         param.sched_priority = 10;
