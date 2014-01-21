@@ -136,8 +136,8 @@ int bench_read()
 {
 	int i;
 	int sum = 0;    
-	register char *p = (char *)g_mem_ptr;
-	while ( p < (char *)&g_mem_ptr[g_mem_size/4]) {
+	register int *p = (int *)g_mem_ptr;
+	while ( p < (int *)&g_mem_ptr[g_mem_size/4]) {
 		sum += 
 #define DOIT(i) p[i]+
                 DOIT(0) 
@@ -216,7 +216,7 @@ void usage(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	uint64_t sum = 0;
+	long sum = 0;
 	unsigned finish = 5;
 	int prio = 0;        
 	int num_processors;
@@ -384,19 +384,20 @@ int main(int argc, char *argv[])
 	for (i=0;; i++) {
 		switch (acc_type) {
 		case READ:
-			sum = bench_read();
+			sum += bench_read();
 			break;
 		case WRITE:
-			sum = bench_write();
+			sum += bench_write();
 			break;
 		case RDWR:
-			sum = bench_rdwr();
+			sum += bench_rdwr();
 			break;
 		}
 
 		if (iterations > 0 && i >= iterations)
 			break;
 	}
+	printf("total sum = %ld\n", sum);
 	quit(0);
 }
 
