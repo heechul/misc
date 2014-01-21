@@ -104,14 +104,18 @@ int main(int argc, char* argv[])
 	int offset = 0;
 
 	int page_shift = DEFAULT_DRAM_PAGE_SHIFT;
+	int xor_page_shift = 0;
 
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "a:xb:o:m:c:i:l:h")) != -1) {
+	while ((opt = getopt(argc, argv, "a:xb:s:o:m:c:i:l:h")) != -1) {
 		switch (opt) {
-		case 'b': /* bank offset */
+		case 'b': /* bank bit */
 			page_shift = strtol(optarg, NULL, 0);
+			break;
+		case 's': /* xor-bank bit */
+			xor_page_shift = strtol(optarg, NULL, 0);
 			break;
 		case 'o': /* bank offset */
 			offset = strtol(optarg, NULL, 0);
@@ -181,19 +185,23 @@ int main(int argc, char* argv[])
 	/* initialize data */
 	int off_idx = offset * (1<<page_shift) / 4;
 	
-	if ((1<<page_shift) >= PAGE_SIZE)
-		off_idx ++;
+	/* if ((1<<page_shift) >= PAGE_SIZE) */
+	/* 	off_idx ++; */
+
+	if (xor_page_shift > 0) {
+		off_idx = offset * ((1<<page_shift) + (1<<xor_page_shift)) / 4;
+	}
 
 	list = &memchunk[off_idx];
-	for (i = 0; i < 64; i++) {
+	for (i = 0; i < 32; i++) {
 		int idx = i * PAGE_SIZE / 4;
-		if (i == 63)
+		if (i == 31)
 			list[idx] = 0;
 		else
 			list[idx] = (i+1) * PAGE_SIZE/4;
 	}
 	next = 0;
-	printf("offset: %d, pshift: %d\n", offset, page_shift);
+	printf("offset: %d, pshift: %d, XOR-pshift: %d\n", offset, page_shift, xor_page_shift);
 
 #if 0
         param.sched_priority = 10;
