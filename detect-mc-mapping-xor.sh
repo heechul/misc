@@ -13,6 +13,5 @@ while read buf; do
     rbit=`echo $buf | awk '{ print $2 }'`
     echo -n "Bit $lbit <--> $rbit: "
     ./mc-mapping -c 0 -i 9000000 -b $lbit -s $rbit -x 2> /dev/null | grep band | awk '{ print $2 }' || echo "N/A"
-    echo 
 done
 killall -9 mc-mapping
