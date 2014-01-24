@@ -2,7 +2,7 @@
 DBGFS=/sys/kernel/debug/palloc
 
 # system info
-SYSTEM=icecream
+SYSTEM=nemo
 CH=1
 NDIMM=1
 
@@ -27,6 +27,14 @@ if [ "$SYSTEM" = "icecream" ]; then
 	    MASK=0x00116040   # bits:  6, 13, 14, 16, 20
 	else
 	    error "Not possible CH($CH) and NDIMM($NDIMM)"
+	fi
+    fi
+elif [ "$SYSTEM" = "nemo" ]; then
+    MAXCPU=3
+    USE_XOR=1
+    if [ $CH -eq 1 ]; then
+	if [ $NDIMM -eq 1 ]; then
+	    MASK=0x0001e000
 	fi
     fi
 elif [ "$SYSTEM" = "T61" ]; then

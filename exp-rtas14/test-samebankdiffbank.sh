@@ -2,6 +2,8 @@
 
 . ./functions # MAXCPU, SYSTEM
 
+PATH=$PATH:..
+
 killall -9 latency 
 
 outputfile=log.txt
@@ -17,12 +19,12 @@ echo $$ > /sys/fs/cgroup/corun_samebank/tasks
 
 killall latency	
 log_echo "samebank [0] experiments"
-output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
 log_echo $output
 
 for cpu in `seq 1 $MAXCPU`; do 
-    latency -c $cpu -i 1000000000 >& /dev/null &
-    output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+    latency -m 32768 -c  $cpu -i 1000000000 >& /dev/null &
+    output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
     log_echo $output
 done	
 
@@ -33,14 +35,14 @@ echo 0-$MAXCPU > /sys/fs/cgroup/corun_diffbank/cpuset.cpus
 echo 1-15 > /sys/fs/cgroup/corun_diffbank/palloc.bins
 
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
 log_echo $output
 
 for cpu in `seq 1 $MAXCPU`; do 
     echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-    latency -c $cpu -i 1000000000 >& /dev/null &
+    latency -m 32768 -c  $cpu -i 1000000000 >& /dev/null &
     echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-    output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+    output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
     log_echo $output
 done
 
@@ -51,26 +53,26 @@ echo 0-$MAXCPU > /sys/fs/cgroup/corun_diffbank/cpuset.cpus
 echo 1 > /sys/fs/cgroup/corun_diffbank/palloc.bins
 
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
 log_echo $output
 
 for cpu in `seq 1 $MAXCPU`; do 
     echo $$ > /sys/fs/cgroup/corun_diffbank/tasks
-    latency -c $cpu -i 1000000000 >& /dev/null &
+    latency -m 32768 -c  $cpu -i 1000000000 >& /dev/null &
     echo $$ > /sys/fs/cgroup/corun_samebank/tasks
-    output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+    output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
     log_echo $output
 done
 killall latency	
 
 log_echo "buddy experiments"
 echo $$ > /sys/fs/cgroup/tasks
-output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
 log_echo $output
 
 for cpu in `seq 1 $MAXCPU`; do 
-    latency -c $cpu -i 1000000000 >& /dev/null &
-    output=`latency -c 0 -i 100 2> /dev/null | grep bandwidth`
+    latency -m 32768 -c  $cpu -i 1000000000 >& /dev/null &
+    output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
     log_echo $output
 done
 
