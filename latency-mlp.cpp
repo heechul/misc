@@ -206,7 +206,7 @@ int main(int argc, char* argv[])
 			repeat = strtol(optarg, NULL, 0);
 			fprintf(stderr, "repeat=%d\n", repeat);
 			break;
-		case 'l': /* iterations */
+		case 'l': /* MLP */
 			mlp = strtol(optarg, NULL, 0);
 			fprintf(stderr, "MLP=%d\n", mlp);
 			break;
