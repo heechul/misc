@@ -3,6 +3,9 @@
 # .bash_profile. ~/.bash_profile
 . ./functions
 
+PATH=$PATH:..
+
+
 outputfile=profile.txt
 repeat=1
 

@@ -2,6 +2,8 @@
 
 . functions
 
+PATH=$PATH:..
+
 outputfile=profile.txt
 
 repeat=1

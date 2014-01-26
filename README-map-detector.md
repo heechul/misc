@@ -13,12 +13,6 @@ the following is measured on a Intel Xeon W3530 (nehalem) machine
 with 1ch 4GB DDR3 DRAM (total 16 banks=2 ranks x 8 banks/rank) which 
 was used in our RTAS'14 paper [1]. 
 
-Notice that the outputs of bit 12,13,19,20 are noticably different
-from the outputs of the other bits. Since we already know from the DRAM 
-specification that there are 16 banks, we can conclude that the 
-identified 4 bits are used to address DRAM banks.
-
-
      	$ sudo ./detect-mc-mapping.sh
 	mc-mapping: no process found
 	Run a background task on core1-3
@@ -39,6 +33,14 @@ identified 4 bits are used to address DRAM banks.
 	Bit19: 785.48		<--- faster
 	Bit20: 787.71		<--- faster
 
+
+Notice that the outputs of bit 12,13,19,20 are noticably different
+from the outputs of the other bits. Since we already know from the DRAM 
+specification that there are 16 banks, we can conclude that the 
+identified 4 bits are used to address DRAM banks.
+
+!!!WARNING!!! Running 'detect-mc-mapping.sh' can cause system unstability or 
+even crash. Therefore, it is recommended to reboot the machine.
 
 Handling XOR addressing 
 =======================

@@ -4,6 +4,9 @@
 #
 # (c) 2013 Heechul Yun <heechul@ittc.ku.edu>
 #
+# Safe detection method using huge page (2MB). 
+# It works on Nahelem but doesn't work haswell for unknown reason
+# 
 
 killall -9 mc-mapping
 
