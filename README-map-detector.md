@@ -44,7 +44,7 @@ Handling XOR addressing
 =======================
 
 If the identified bits are more than expected, the it is likely because
-the memory controller is using XOR addressing. (See [2] for details.)
+the memory controller is using XOR addressing [2].
 
 For example, the following is measured on a Intel Xeon E3-1230 (Haswell) 
 machine with 1ch 4GB DDR3 DRAM (total 16 banks=2 ranks x 8 banks/rank). 
@@ -125,3 +125,11 @@ number means that the two bits are XOR paired.
 
 Hence, we can conclude the final mappings are used to select DRAM banks: 
 (13 XOR 17), (14 XOR 18), (15 XOR 19), and(16 XOR 20). 
+
+
+References
+==========
+
+[1] H. Yun, R. Mancuso, Z. Wu, R. Pellizzoni, "PALLOC: DRAM Bank-Aware Memory Allocator for Performance Isolation on Multicore Platforms", RTAS, 2014.
+
+[2] Z. Zhang, Z. Zhu, X. Zhang, "A permutation-based page interleaving scheme to reduce row-buffer conflicts and exploit data locality", MICRO, 2000
