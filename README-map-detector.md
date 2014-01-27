@@ -9,8 +9,8 @@ Next, run the following script to identify candidate bank bits.
 It tests from bit 6 to 29 and for each bit, it reports the measured 
 average bandwidth of the microbenchmark (mc-mapping). If successful, 
 bits can be categorized into two distinct subgroups. For example, 
-the following is measured on a Intel Xeon W3530 (nehalem) machine 
-with 1ch 4GB DDR3 DRAM (total 16 banks=2 ranks x 8 banks/rank) which 
+the following is the output on a Intel Xeon W3530 (nehalem) machine 
+with 1ch 4GB DDR3 DRAM (total 16 banks=2 ranks x 8 banks/rank), which 
 was used in our RTAS'14 paper [1]. 
 
      	$ sudo ./detect-mc-mapping.sh
@@ -34,24 +34,25 @@ was used in our RTAS'14 paper [1].
 	Bit20: 787.71		<--- faster
 
 
-Notice that the outputs of bit 12,13,19,20 are noticably different
-from the outputs of the other bits. Since we already know from the DRAM 
+Notice that bit 12,13,19, and 20 are noticably different
+from the other bits. Since we already know from the DRAM 
 specification that there are 16 banks, we can conclude that the 
-identified 4 bits are used to address DRAM banks.
+identified 4 bits are used to address the DRAM banks.
 
-!!!WARNING!!! Running 'detect-mc-mapping.sh' can cause system unstability or 
-even crash. Therefore, it is recommended to reboot the machine.
+!!!WARNING!!! Running 'detect-mc-mapping.sh' can cause system instability or 
+even crash because it directly writes through /dev/mem. Therefore, it is 
+recommended to reboot the machine after running the script.
 
-Handling XOR addressing 
-=======================
+## Handling XOR addressing 
 
-If the identified bits are more than expected, the it is likely because
-the memory controller is using XOR addressing [2].
+If the number of identified bits are more than expected, then it is likely that
+the memory controller uses XOR addressing [2].
 
-For example, the following is measured on a Intel Xeon E3-1230 (Haswell) 
+For example, the following is the output on a Intel Xeon E3-1230 (Haswell) 
 machine with 1ch 4GB DDR3 DRAM (total 16 banks=2 ranks x 8 banks/rank). 
-Unlike the previous case, there are total 8 bits---bit 13,14,15,16,17,18,
-19--that show better bandwidth numbers. 
+In this case, there are total 8 bits (bit 13,14,15,16,17,18,19) that show 
+better bandwidth numbers, although only 4 bits are expected. This is because
+the memory controller uses XOR address mapping.
 
 	$ sudo ./detect-mc-mapping.sh
 	  mc-mapping: no process found
@@ -82,11 +83,11 @@ Unlike the previous case, there are total 8 bits---bit 13,14,15,16,17,18,
 	  Bit28: 315.51
 	  Bit29: 310.42
 
-In case the XOR addressing is used, we need to identify which two bits 
-are paired with the XOR logic. We provide two scripts to aid this 
+In case the XOR addressing is used, we need to identify which pairs of two bits 
+are XOR gated. We provide two scripts to aid this 
 identification process. The following is performed on the same E3-1230 
-platform. It tests all pairs of two bits out of the 8 bits. Again, the 
-outputs would form two distinct groups. In this case, the lower bandwidth 
+platform. It tests all pairs of two bits out of the total 8 bits. Again, the 
+output would form two distinct groups. In this case, the lower bandwidth 
 number means that the two bits are XOR paired. 
 
 	 
@@ -125,13 +126,13 @@ number means that the two bits are XOR paired.
 	Bit 18 <--> 20: 615.39
 	Bit 19 <--> 20: 617.36
 
-Hence, we can conclude the final mappings are used to select DRAM banks: 
-(13 XOR 17), (14 XOR 18), (15 XOR 19), and(16 XOR 20). 
+Hence, we can conclude the final mappings, which select DRAM banks, are
+(13 XOR 17), (14 XOR 18), (15 XOR 19), and (16 XOR 20). 
 
 
 References
 ==========
 
-[1] H. Yun, R. Mancuso, Z. Wu, R. Pellizzoni, "PALLOC: DRAM Bank-Aware Memory Allocator for Performance Isolation on Multicore Platforms", RTAS, 2014.
+[1] H. Yun, R. Mancuso, Z. Wu, R. Pellizzoni, "PALLOC: DRAM Bank-Aware Memory Allocator for Performance Isolation on Multicore Platforms", _RTAS_, 2014.
 
-[2] Z. Zhang, Z. Zhu, X. Zhang, "A permutation-based page interleaving scheme to reduce row-buffer conflicts and exploit data locality", MICRO, 2000
+[2] Z. Zhang, Z. Zhu, X. Zhang, "A permutation-based page interleaving scheme to reduce row-buffer conflicts and exploit data locality", _MICRO_, 2000
