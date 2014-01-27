@@ -1,8 +1,6 @@
-Misc micro-benchmarks & tools
-==========
+# Misc micro-benchmarks & tools
 
+## Detecting DRAM address mapping
 
-Detecting DRAM address mapping
-==============================
+See README-map-detector.md
 
-See README-map-detector.md	
