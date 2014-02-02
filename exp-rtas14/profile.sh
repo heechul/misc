@@ -2,7 +2,7 @@
 
 . ./functions
 
-outputfile=profile.txt
+[ ! -z "$2" ] && outputfile=$2
 
 echo "LLC miss evt: 0x${llc_miss_evt}"
 echo "arch bit: ${archbit}bit"
