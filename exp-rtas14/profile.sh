@@ -2,6 +2,8 @@
 
 . ./functions
 
+outputfile=profile.txt
+
 echo "LLC miss evt: 0x${llc_miss_evt}"
 echo "arch bit: ${archbit}bit"
 plot()
@@ -21,6 +23,38 @@ EOF
     epspdf  ${file}.eps
 }
 
+parse_log_instr()
+{
+    f=$1
+    if [ -f "$f" ]; then
+	instr=`grep instructions $f | awk '{ print $1 }' | sed "s/,//g"`
+	echo $instr
+    fi
+}
+
+# do experiment
+do_experiment_solo()
+{
+    if [ `whoami` != "root" ]; then
+	error "root perm. is needed"
+    fi
+
+    # chrt -f -p 1 $$
+
+    for b in $benchb; do
+	# echo $b
+	echo "" > /sys/kernel/debug/tracing/trace
+	echo "flush" > /sys/kernel/debug/palloc/control
+	echo 1 > /proc/sys/vm/drop_caches # free file caches
+	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q &
+	sleep 10
+	kill_spec >& /dev/null
+	cat /sys/kernel/debug/tracing/trace > $b.trace
+	IX=`parse_log_instr $b.perf`
+	log_echo $b $IX
+	sync
+    done
+}
 
 # do experiment
 do_experiment()
@@ -31,16 +65,30 @@ do_experiment()
 
     # chrt -f -p 1 $$
 
+    echo "bench C0 C1 C2 C3 SUM"
     for b in $benchb; do
-	echo $b
+	#echo $b
 	echo "" > /sys/kernel/debug/tracing/trace
 	echo "flush" > /sys/kernel/debug/palloc/control
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
+
+
+	echo $$ > /sys/fs/cgroup/core1/tasks; run_bench 470.lbm 1 &
+	echo $$ > /sys/fs/cgroup/core2/tasks; run_bench 470.lbm 2 &
+	echo $$ > /sys/fs/cgroup/core3/tasks; run_bench 470.lbm 3 &
+	echo $$ > /sys/fs/cgroup/spec2006/tasks
+
 	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q &
 	sleep 10
-	kill -9 `ps x | grep gcc | grep -v perf | awk '{ print $1 }'`
+	kill_spec >& /dev/null
 	cat /sys/kernel/debug/tracing/trace > $b.trace
-	parse_log $b.perf
+	
+	I0=`parse_log_instr $b.perf`
+	I1=`parse_log_instr C1.470.lbm.perf`
+	I2=`parse_log_instr C2.470.lbm.perf`
+	I3=`parse_log_instr C3.470.lbm.perf`
+	IX=`expr $I0 + $I1 + $I2 + $I3`
+	log_echo $b $I0 $I1 $I2 $I3 $IX
 	sync
     done
 }
@@ -64,20 +112,20 @@ do_graph()
 
 # print output
 
-do_print()
-{
-    for b in $benchb; do
-        f=$b.perf
-        if [ -f "$f" ]; then
-                cache=`grep $llc_miss_evt $f | awk '{ print $1 }'`
-                instr=`grep instructions $f | awk '{ print $1 }'`
-                elaps=`grep elapsed $f | awk '{ print $1 }'`
-                echo ${f%.perf}, $cache, $instr
-	else
-	    echo "$b.perf doesn't exist"
-        fi
-    done
-}
+# do_print()
+# {
+#     for b in $benchb; do
+#         f=$b.perf
+#         if [ -f "$f" ]; then
+#                 cache=`grep $llc_miss_evt $f | awk '{ print $1 }'`
+#                 instr=`grep instructions $f | awk '{ print $1 }'`
+#                 elaps=`grep elapsed $f | awk '{ print $1 }'`
+#                 echo ${f%.perf}, $cache, $instr
+# 	else
+# 	    echo "$b.perf doesn't exist"
+#         fi
+#     done
+# }
 
 do_print_stat()
 {
@@ -111,16 +159,22 @@ print_sysinfo()
 benchb="$spec2006_xeon_rta13"
 # benchb=462.libquantum
 init_system
-rmmod memguard
 set_cpus "1 1 1 1"
 # enable_prefetcher >> profile.txt
 # do_init "100,100,100,100"
-corea=$1
+corea=0
+mode=$1
 
-[ -z "$corea" ] && error "Usage: $0 <core>"
+[ -z "$mode" ] && error "Usage: $0 <solo|corun>"
 
 print_sysinfo
-do_experiment
-#do_graph
-do_print >> profile.txt
-#do_print_stat >> bench.stat
+
+if [ "$mode" = "corun" ]; then
+    do_experiment    
+else
+    do_experiment_solo
+    #do_graph
+    #do_print_stat >> bench.stat
+fi
+
+

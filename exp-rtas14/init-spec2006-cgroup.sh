@@ -2,7 +2,7 @@
 DBGFS=/sys/kernel/debug/palloc
 
 # system info
-SYSTEM=nemo
+SYSTEM=icecream
 CH=1
 NDIMM=1
 

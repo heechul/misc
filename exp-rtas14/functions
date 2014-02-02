@@ -261,7 +261,6 @@ finish()
 {
     sed 's/,//g' $outputfile | sed 's/ /,/g' > ${outputfile%.txt}.csv
     backup backup-`date +%F-%H-%M`
-    rmmod memguard
     chown heechul.heechul $outputfile
     log_echo "============================="
     exit
@@ -370,166 +369,6 @@ init_cgroup_color()
     done
 } > /dev/null
 
-print_settings()
-{
-    cat /sys/kernel/debug/memguard/control
-    cat /sys/kernel/debug/memguard/limit
-    echo 
-}
-
-print_stats()
-{
-    cat /sys/kernel/debug/memguard/failcnt
-    cat /sys/kernel/debug/memguard/usage
-    echo 
-}
-
-do_init()
-{ # load module
-    check_root
-    budgets=$1
-    reclaim=$2
-    codebase=`(cd ~/Projects/kernelapi; git log | head -n 1)`
-    option="g_hw_type=$arch g_period_us=1000 g_budget_max_bw=60000 g_budget_pct=$budgets"
-
-    [ ! -z "$reclaim" -a "$reclaim" = "1" ] && option="$option g_use_reclaim=1"
-
-    echo "loading module budget=$budgets"
-    lsmod | grep memguard && rmmod memguard
-
-    insmod ./memguard.ko $option || error "Load failed"
-
-    echo "option: $option"
-    echo "$budgets|reclaim=$reclaim|$codebase" >> $outputfile
-
-    print_settings
-}
-
-do_init_new()
-{ # load module
-    check_root
-    budgets=$1
-    reclaim=$2
-    maxbw=$3
-    codebase=`(cd ~/Projects/kernelapi; git log | head -n 1)`
-    option="g_hw_type=$arch g_budget_max_bw=$RMIN "
-
-    [ "$reclaim" = "1" ] && option="$option g_use_reclaim=1"
-    [ ! -z "$maxbw" ] && option="$option g_budget_max_bw=$maxbw"
-    echo "loading module budget=$budgets"
-    lsmod | grep memguard && rmmod memguard
-
-    insmod ./memguard.ko $option
-
-    set_max_bw $maxbw
-    set_limit "$budgets"
-
-    echo "option: $option"
-    echo "$budgets|reclaim=$reclaim|$codebase" | sed 's/ /_/g' >> $outputfile
-
-    print_settings
-}
-
-do_init_common()
-{
-    check_root
-    local budgets=$1
-    local shares=$2
-    local reclaim=$3
-    local maxbw=$4
-    local exclusive=$5
-    local mbs=$6
-    local codebase=`(cd ~/Projects/kernelapi; git log | head -n 1)`
-    local option="g_hw_type=$arch g_budget_max_bw=$RMIN "
-    [ "$reclaim" = "1" ] && option="$option g_use_reclaim=1"
-    echo "loading module b$budgets s$shares m$mbs r$reclaim m$maxbw c$codebase"
-
-    lsmod | grep memguard && rmmod memguard
-    sleep 1
-    insmod ./memguard.ko $option
-    [ ! -z "$maxbw" ] && set_max_bw $maxbw
-    [ ! -z "$budgets" ] && set_limit "$budgets"
-    [ ! -z "$shares" ] && set_share "$shares"
-    [ ! -z "$exclusive" ] && set_exclusive_mode $exclusive
-    [ ! -z "$mbs" ] && set_limit_mb "$mbs"
-
-    echo "m$maxbw|b$budgets|s$shares|m$mbs|r$reclaim|e$exclusive|c$codebase" | sed 's/ /_/g' >> $outputfile
-    print_settings
-}
-
-do_init_budget()
-{
-    do_init_common "$1" "" "$2" "$3" "$4"
-}
-
-do_init_share()
-{
-    local shares="$1"
-    local reclaim=$2
-    local maxbw=$3
-    local exclusive=$4
-    do_init_common "" "$shares" "$reclaim" "$maxbw" "$exclusive"
-}
-
-do_init_mb()
-{
-    local mbs="$1"
-    local reclaim=$2
-    local exclusive=$3
-    do_init_common "" "" "$reclaim" "" "$exclusive" "$mbs"
-}
-
-set_exclusive_mode()
-{
-    check_root
-    local mode=$1
-    echo exclusive $mode > /sys/kernel/debug/memguard/control
-    # print_settings
-}
-
-set_reclaim()
-{
-    check_root
-    echo reclaim $1 > /sys/kernel/debug/memguard/control
-    # print_settings
-}
-
-set_max_bw()
-{
-    check_root
-    local maxbw=$1
-    echo maxbw $maxbw > /sys/kernel/debug/memguard/control
-    # print_settings
-}
-
-set_share()
-{ # load module
-    check_root
-    local shares=$1
-    echo "reset" > /sys/kernel/debug/memguard/failcnt
-    echo $shares > /sys/kernel/debug/memguard/share
-
-    # print_settings
-}
-
-set_limit()
-{
-    check_root
-    budgets=$1  #in pct
-    echo "reset" > /sys/kernel/debug/memguard/failcnt
-    echo $budgets > /sys/kernel/debug/memguard/limit
-    # print_settings
-}
-
-set_limit_mb()
-{
-    check_root
-    local budgets=$1  #in pct
-    echo "reset" > /sys/kernel/debug/memguard/failcnt
-    echo mb $budgets > /sys/kernel/debug/memguard/limit
-    # print_settings
-}
-
 kill_spec()
 {
 	kill -9 `ps x | grep gcc | grep -v perf | awk '{ print $1 }'` >& /dev/null
@@ -558,84 +397,6 @@ set_cpu_interval()
     echo "New interval: $intval"
 }
 
-
-do_exp_1core()
-{
-    check_root
-    echo "" > /sys/kernel/debug/tracing/trace
-
-    local bench=$1
-    local core=$2
-    
-    run_bench $bench $core &
-
-    echo $@ >> $outputfile
-    sleep 10
-
-    cat /sys/kernel/debug/memguard/failcnt
-    rmmod memguard
-
-    echo sending kill signal
-    kill -9 `ps x | grep gcc | grep -v perf | awk '{ print $1 }'` >& /dev/null
-    kill -9 `ps x | grep gcc | grep -v perf | awk '{ print $1 }'` >& /dev/null
-    killall -9 fps bandwidth latency cpuhog >& /dev/null
-
-    cat /sys/kernel/debug/tracing/trace > tmp.trace
-
-    output="`parse_log C$core.$bench.perf`"
-    cat tmp.trace | grep "$core\]" > C$core.$bench.trace
-    grep org C$core.$bench.trace | awk '{ print $7 }' > C$core.$bench.dat
-
-    log_echo $output
-    chown heechul.heechul $outputfile *.trace *.perf
-    chmod +w $outputfile
-    sync
-}
-
-do_exp_ncore()
-{
-    check_root
-    echo "" > /sys/kernel/debug/tracing/trace
-
-    i=0
-    for var in "$@"
-    do
-	echo "Run $var at $i"
-	run_bench $var $i &
-	i=`expr $i + $intval`
-    done
-
-    echo $@ >> $outputfile
-
-    sleep 10
-
-    # log_echo `cat /sys/kernel/debug/memguard/failcnt | grep exclusive`
-    # log_echo `cat /sys/kernel/debug/memguard/failcnt | grep cpuhog`
-    cat /sys/kernel/debug/memguard/failcnt
-    rmmod memguard
-
-    echo sending kill signal
-    kill -9 `ps x | grep gcc | grep -v perf | awk '{ print $1 }'` >& /dev/null
-    kill -9 `ps x | grep gcc | grep -v perf | awk '{ print $1 }'` >& /dev/null
-    killall -9 fps bandwidth latency cpuhog >& /dev/null
-
-    cat /sys/kernel/debug/tracing/trace > ${#}core.trace
-
-    i=0
-    output=""
-    for var in "$@"; do
-	output="$output `parse_log C$i.$var.perf`"
-	cat ${#}core.trace | grep "$i\]" > C$i.$var.trace
-	grep org C$i.$var.trace | awk '{ print $7 }' > C$i.$var.dat
-	i=`expr $i + $intval`
-    done
-    
-    log_echo $output
-
-    chown heechul.heechul $outputfile *.trace *.perf
-    chmod +w $outputfile
-    sync
-}
 
 plot()
 {
@@ -672,11 +433,10 @@ stop_services()
 init_system()
 {
     echo "one time things"
-    echo 8 8 8 8 > /proc/sys/kernel/printk
+#    echo 8 8 8 8 > /proc/sys/kernel/printk
     echo 2048 > /sys/kernel/debug/tracing/buffer_size_kb
     # init_cgroup
     stop_services
     check_root
-    rmmod memguard
 
 } > /dev/null
