@@ -187,6 +187,9 @@ int main(int argc, char* argv[])
 		off_idx = ((1<<page_shift) + (1<<xor_page_shift)) / 4;
 	}
 
+	if (page_shift > 0 || xor_page_shift > 0)
+		off_idx ++;
+
 	list = &memchunk[off_idx];
 	for (i = 0; i < NUM_ENTRIES; i++) {
 		int idx = i * ENTRY_DIST / 4;
