@@ -153,6 +153,8 @@ int main(int argc, char* argv[])
 	}
 
 	g_mem_size += (1 << page_shift);
+	g_mem_size = CEIL(g_mem_size, HUGEPAGE_SIZE);
+
 	/* alloc memory. align to a page boundary */
 	if (use_dev_mem) {
 		int fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -169,7 +171,7 @@ int main(int argc, char* argv[])
 				MAP_SHARED, 
 				fd, (off_t)addr);
 	} else {
-		memchunk = mmap(0, CEIL(g_mem_size, HUGEPAGE_SIZE),
+		memchunk = mmap(0, g_mem_size,
 				PROT_READ | PROT_WRITE, 
 				MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
 				-1, 0);
