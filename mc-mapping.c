@@ -34,14 +34,11 @@
 /**************************************************************************
  * Public Definitions
  **************************************************************************/
-#define L3_SIZE       (8*1024*1024)         // 8MB in E3-1230
 #define L3_NUM_WAYS   16                    // cat /sys/devices/system/cpu/cpu0/cache/index3/ways..
-#define L3_WAY_SIZE   (L3_SIZE/L3_NUM_WAYS)
-#define HUGEPAGE_SIZE (2048*1024)           // 2MB in X86_64
+#define NUM_ENTRIES   (L3_NUM_WAYS*2)       // # of list entries to iterate
+#define ENTRY_SHIFT   (24)                  // [27:23] bits are used for iterations
+#define ENTRY_DIST    (1<<ENTRY_SHIFT)      // distance between the two entries
 #define CACHE_LINE_SIZE 64
-
-#define NUM_ENTRIES   (L3_NUM_WAYS * 2)     // # of list entries to iterate
-#define ENTRY_DIST    HUGEPAGE_SIZE
 
 #define MAX(a,b) ((a>b)?(a):(b))
 #define CEIL(val,unit) (((val + unit - 1)/unit)*unit)
@@ -106,7 +103,6 @@ int main(int argc, char* argv[])
 
 	int repeat = 1000;
 
-
 	int page_shift = 0;
 	int xor_page_shift = 0;
 
@@ -134,26 +130,22 @@ int main(int argc, char* argv[])
 			CPU_SET(cpuid % num_processors, &cmask);
 			if (sched_setaffinity(0, num_processors, &cmask) < 0)
 				perror("error");
-			else
-				fprintf(stderr, "assigned to cpu %d\n", cpuid);
 			break;
 		case 'p': /* set priority */
 			prio = strtol(optarg, NULL, 0);
 			if (setpriority(PRIO_PROCESS, 0, prio) < 0)
 				perror("error");
-			else
-				fprintf(stderr, "assigned priority %d\n", prio);
 			break;
 		case 'i': /* iterations */
 			repeat = strtol(optarg, NULL, 0);
-			fprintf(stderr, "repeat=%d\n", repeat);
+			printf("repeat=%d\n", repeat);
 			break;
 		}
 
 	}
 
 	g_mem_size += (1 << page_shift);
-	g_mem_size = CEIL(g_mem_size, HUGEPAGE_SIZE);
+	g_mem_size = CEIL(g_mem_size, ENTRY_DIST);
 
 	/* alloc memory. align to a page boundary */
 	if (use_dev_mem) {
@@ -189,8 +181,16 @@ int main(int argc, char* argv[])
 		off_idx = ((1<<page_shift) + (1<<xor_page_shift)) / 4;
 	}
 
+#if 0
 	if (page_shift > 0 || xor_page_shift > 0)
 		off_idx ++;
+#else
+	if (page_shift >= ENTRY_SHIFT || xor_page_shift >= ENTRY_SHIFT) {
+		fprintf(stderr, "page_shift or xor_page_shift must be less than %d bits\n",
+			ENTRY_SHIFT);
+		exit(1);
+	}
+#endif
 
 	list = &memchunk[off_idx];
 	for (i = 0; i < NUM_ENTRIES; i++) {

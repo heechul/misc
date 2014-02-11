@@ -9,11 +9,11 @@ Next, run the following script to identify candidate bank bits.
 It tests from bit 6 to 29 and for each bit, it reports the measured 
 average bandwidth of the microbenchmark (mc-mapping). If successful, 
 bits can be categorized into two distinct subgroups. For example, 
-the following is the output on a Intel Xeon W3530 (nehalem) machine 
+the following is the output on an Intel Xeon W3530 (nehalem) machine 
 with 1ch 4GB DDR3 DRAM (total 16 banks=2 ranks x 8 banks/rank), which 
 was used in our RTAS'14 paper [1]. 
 
-     	$ sudo ./detect-mc-mapping.sh
+	$ sudo ./detect-mc-mapping.sh
 	mc-mapping: no process found
 	Run a background task on core1-3
 	Now run the test
@@ -48,7 +48,7 @@ recommended to reboot the machine after running the script.
 If the number of identified bits are more than expected, then it is likely that
 the memory controller uses XOR addressing [2].
 
-For example, the following is the output on a Intel Xeon E3-1230 (Haswell) 
+For example, the following is the output on an Intel Xeon E3-1230 (Haswell) 
 machine with 1ch 4GB DDR3 DRAM (total 16 banks=2 ranks x 8 banks/rank). 
 In this case, there are total 8 bits (bit 13,14,15,16,17,18,19) that show 
 better bandwidth numbers, although only 4 bits are expected. This is because
