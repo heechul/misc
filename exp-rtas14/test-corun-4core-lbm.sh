@@ -21,6 +21,7 @@ rm -f DONE
 
 [ -d "/sys/fs/cgroup/core1" ] || error "core1 cgroup does not exist"
 
+echo 1 > /sys/kernel/debug/palloc/use_palloc
 echo 2 > /sys/kernel/debug/palloc/debug_level
 echo 4 > /sys/kernel/debug/palloc/alloc_balance
 echo $$ > /sys/fs/cgroup/tasks
@@ -39,8 +40,7 @@ done
 echo "0-3" > /sys/fs/cgroup/spec2006/palloc.bins
 echo $$ > /sys/fs/cgroup/spec2006/tasks
 for i in `seq 1 $repeat`; do
-    ./profile.sh solo
-    ./profile.sh corun
+    ./profile.sh corun $outputfile
 done
 
 echo done > DONE
@@ -59,21 +59,18 @@ done
 echo 0,4,8,12 > /sys/fs/cgroup/spec2006/palloc.bins
 echo $$ > /sys/fs/cgroup/spec2006/tasks
 for i in `seq 1 $repeat`; do
-    ./profile.sh solo
-    ./profile.sh corun
+    ./profile.sh corun $outputfile
 done
 
 echo done > DONE
 kill_spec
 sleep 1
 
-
 echo $$ > /sys/fs/cgroup/tasks
 log_echo 'Buddy'
-echo 99 > /sys/kernel/debug/palloc/debug_level
+echo 0 > /sys/kernel/debug/palloc/use_palloc
 for i in `seq 1 $repeat`; do
-    ./profile.sh solo
-    ./profile.sh corun
+    ./profile.sh corun $outputfile
 done
 
 echo done > DONE

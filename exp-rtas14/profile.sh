@@ -15,7 +15,7 @@ plot()
     file="${bench}_${start}-${finish}"
     cat > ${file}.scr <<EOF
 set terminal postscript eps enhanced color "Times-Roman" 22
-set yrange [0:500000]
+set yrange [0:100000]
 set xrange [$start:$finish]
 plot '$bench.dat' ti "$bench" w l
 EOF
@@ -28,6 +28,16 @@ parse_log_instr()
     f=$1
     if [ -f "$f" ]; then
 	instr=`grep instructions $f | awk '{ print $1 }' | sed "s/,//g"`
+	echo $instr
+    fi
+}
+
+parse_log_XXX()
+{
+    f=$1
+    counter=$2
+    if [ -f "$f" ]; then
+	instr=`grep $counter $f | awk '{ print $1 }' | sed "s/,//g"`
 	echo $instr
     fi
 }
@@ -51,6 +61,7 @@ do_experiment_solo()
 	kill_spec >& /dev/null
 	cat /sys/kernel/debug/tracing/trace > $b.trace
 	IX=`parse_log_instr $b.perf`
+	IX="$IX `parse_log_XXX $b.perf 412e`"
 	log_echo $b $IX
 	sync
     done
@@ -70,6 +81,7 @@ do_experiment()
 	#echo $b
 	echo "" > /sys/kernel/debug/tracing/trace
 	echo "flush" > /sys/kernel/debug/palloc/control
+	echo 1 > /sys/kernel/debug/palloc/debug_level
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
 
 
@@ -157,6 +169,8 @@ print_sysinfo()
 
 # benchb=$spec2006_xeon_all
 benchb="$spec2006_xeon_rta13"
+# benchb=436.cactusADM
+#benchb="470.lbm"
 # benchb=462.libquantum
 init_system
 set_cpus "1 1 1 1"
@@ -173,8 +187,8 @@ if [ "$mode" = "corun" ]; then
     do_experiment    
 else
     do_experiment_solo
-    #do_graph
-    #do_print_stat >> bench.stat
+    do_graph
+    do_print_stat >> bench.stat
 fi
 
 

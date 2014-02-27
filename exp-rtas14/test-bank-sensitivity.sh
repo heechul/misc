@@ -20,15 +20,17 @@ set_cgroup_bins()
     log_echo "4B-[$bins]-($balance)"
     echo $bins  > /sys/fs/cgroup/spec2006/palloc.bins
     echo $$ > /sys/fs/cgroup/spec2006/tasks
+    echo 1 > /sys/kernel/debug/palloc/use_palloc
     echo 2 > /sys/kernel/debug/palloc/debug_level
     echo $balance > /sys/kernel/debug/palloc/alloc_balance
 }
 
 balance=4
 log_echo 'buddy-solo'
-echo 99 > /sys/kernel/debug/palloc/debug_level
+echo 0 > /sys/kernel/debug/palloc/use_palloc
 ./profile.sh solo
 
+echo 1 > /sys/kernel/debug/palloc/use_palloc
 log_echo '4B-LO-solo($balance)'
 set_cgroup_bins "0-3" $balance
 ./profile.sh solo

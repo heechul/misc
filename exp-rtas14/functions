@@ -434,7 +434,7 @@ init_system()
 {
     echo "one time things"
 #    echo 8 8 8 8 > /proc/sys/kernel/printk
-    echo 2048 > /sys/kernel/debug/tracing/buffer_size_kb
+    echo 4096 > /sys/kernel/debug/tracing/buffer_size_kb
     # init_cgroup
     stop_services
     check_root
