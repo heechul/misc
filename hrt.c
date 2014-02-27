@@ -172,10 +172,13 @@ int main(int argc, char* argv[])
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "sc:i:C:I:p:o:h")) != -1) {
+	while ((opt = getopt(argc, argv, "sc:i:m:I:p:o:h")) != -1) {
 		switch (opt) {
 		case 's': /* set access type */
 			serial = 1;
+			break;
+		case 'm': /* workingset size (MB) */
+			g_mem_size = strtol(optarg, NULL, 0) * 1024 * 1024; 
 			break;
 		case 'c': /* set CPU affinity */
 			cpuid = strtol(optarg, NULL, 0);
