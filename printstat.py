@@ -61,8 +61,8 @@ def main():
     print "max: ", stats.max()
     print "stdev: ", stats.stdev()
     #avg  min max 99pctile
-    print "LINE(avg|min|max|99pct|stdev): ", stats.avg(), \
-        stats.min(), stats.max(), stats.percentile(99), stats.stdev()
+    print "LINE(avg|min|max|99pct|stdev|median): ", stats.avg(), \
+        stats.min(), stats.max(), stats.percentile(99), stats.stdev(), stats.median()
 
 
 if __name__ == "__main__":

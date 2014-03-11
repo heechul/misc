@@ -181,16 +181,11 @@ int main(int argc, char* argv[])
 		off_idx = ((1<<page_shift) + (1<<xor_page_shift)) / 4;
 	}
 
-#if 0
-	if (page_shift > 0 || xor_page_shift > 0)
-		off_idx ++;
-#else
 	if (page_shift >= ENTRY_SHIFT || xor_page_shift >= ENTRY_SHIFT) {
 		fprintf(stderr, "page_shift or xor_page_shift must be less than %d bits\n",
 			ENTRY_SHIFT);
 		exit(1);
 	}
-#endif
 
 	list = &memchunk[off_idx];
 	for (i = 0; i < NUM_ENTRIES; i++) {
