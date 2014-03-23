@@ -56,12 +56,12 @@ do_experiment_solo()
 	echo "" > /sys/kernel/debug/tracing/trace
 	echo "flush" > /sys/kernel/debug/palloc/control
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
-	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q &
+	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -e r80b0 -e r01b2 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q &
 	sleep 10
 	kill_spec >& /dev/null
 	cat /sys/kernel/debug/tracing/trace > $b.trace
 	IX=`parse_log_instr $b.perf`
-	IX="$IX `parse_log_XXX $b.perf 412e`"
+	IX="$IX `parse_log_XXX $b.perf 412e` `parse_log_XXX $b.perf 80b0` `parse_log_XXX $b.perf 1b2`"
 	log_echo $b $IX
 	sync
     done

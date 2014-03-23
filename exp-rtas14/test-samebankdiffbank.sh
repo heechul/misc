@@ -17,6 +17,10 @@ echo 0 > /sys/fs/cgroup/corun_samebank/cpuset.mems
 echo 0 > /sys/fs/cgroup/corun_samebank/palloc.bins
 echo $$ > /sys/fs/cgroup/corun_samebank/tasks
 
+echo 1 > /sys/kernel/debug/palloc/use_palloc
+echo 2 > /sys/kernel/debug/palloc/debug_level
+
+
 killall latency	
 log_echo "samebank [0] experiments"
 output=`latency -m 32768 -c  0 -i 100 2> /dev/null | grep bandwidth`
