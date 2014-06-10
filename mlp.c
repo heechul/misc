@@ -242,9 +242,16 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
+#if 1
 	/* initialize data. icecream, 1CH-1DIMM (16 banks) */
 	int j_shift = 12, i_bits=2;
 	int i_shift = 19, j_bits=2;
+#else
+	/* initialize data. icecream, 1CH-2DIMM (32 banks) */
+	int j_shift = 12, i_bits=3;
+	int i_shift = 20, j_bits=2;
+#endif
+
 	for (i = 0; i < 1<<i_bits; i++) {
 		for (j = 0; j < 1<<j_bits; j++) {
 			int idx = i * 4 + j;

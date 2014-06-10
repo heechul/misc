@@ -13,7 +13,7 @@
 /**************************************************************************
  * Conditional Compilation Options
  **************************************************************************/
-#define P4080_MCTRL_INTRV_NONE 0
+#define P4080_MCTRL_INTRV_NONE 1
 #define P4080_MCTRL_INTRV_CLCS 0
 #define XEON 0
 
@@ -45,6 +45,7 @@
 #endif
 
 #define CACHE_LINE_SIZE 64	   /* cache Line size is 64 byte */
+#define DRAM_ROW_SIZE 1024
 
 /**************************************************************************
  * Public Types
@@ -189,8 +190,8 @@ int bench_rdwr()
 	int sum = 0;    
 
 	for ( i = g_indx; i < g_mem_size/4; i+=g_next ) {
-		g_mem_ptr[i] = i;
 		sum += g_mem_ptr[i];
+		g_mem_ptr[i] = i;
 		g_nread += CACHE_LINE_SIZE;
 	}
 	return sum;
@@ -253,28 +254,10 @@ int main(int argc, char *argv[])
 				g_next = (CACHE_LINE_SIZE/4);				
 			}
 			/* same bank */
-#if P4080_MCTRL_INTRV_NONE
 			else if( strcmp(optarg,"Row") == 0 ) {
 				g_indx = 0;
-				g_next = (CACHE_LINE_SIZE/4) * 1024;
-
+				g_next = DRAM_ROW_SIZE / 4;
 			}
-			/* diff bank */
-			else if( strcmp(optarg,"Bank") == 0 ) {
-				g_indx = 128*(CACHE_LINE_SIZE/4);
-				g_next = (CACHE_LINE_SIZE/4) * 1024;
-			}
-#elif P4080_MCTRL_INTRV_CLCS
-			else if( strcmp(optarg,"Row") == 0 ) {
-				g_indx = 0;
-				g_next = (CACHE_LINE_SIZE/4) * 1024 * 8;// 2^19
-			}
-			/* diff bank */
-			else if( strcmp(optarg,"Bank") == 0 ) {
-				g_indx = 256*(CACHE_LINE_SIZE/4); // 2^16
-				g_next = (CACHE_LINE_SIZE/4) * 1024 * 8;// 2^19
-			}
-#endif
 			else
 				exit(1);
 			break;

@@ -1,7 +1,7 @@
 /**
  * 
  *
- * Copyright (C) 2010  Heechul Yun <heechul@illinois.edu> 
+ * Copyright (C) 2013  Heechul Yun <heechul@illinois.edu> 
  *
  * This file is distributed under the University of Illinois Open Source
  * License. See LICENSE.TXT for details.
@@ -228,11 +228,15 @@ int main(int argc, char* argv[])
 	for (l = 0; l < mlp; l++) {
 
 		/* alloc memory. align to a page boundary */
+#if 0
 		memchunk = (int *)mmap(0, 
 				       g_mem_size,
 				       PROT_READ | PROT_WRITE, 
 				       MAP_PRIVATE | MAP_ANONYMOUS /* | MAP_HUGETLB */, 
 				       -1, 0);
+#else
+		memchunk = (int *)malloc(g_mem_size);
+#endif
 
 		if ((void *)memchunk == MAP_FAILED) {
 			perror("failed to alloc");
@@ -282,5 +286,6 @@ int main(int argc, char* argv[])
 	printf("duration %ld ns, #access %d\n", nsdiff, naccess);
 	printf("bandwidth %.2f MB/s\n", (double)64*1000*naccess/nsdiff);
 
+	free(memchunk);
 	return 0;
 }

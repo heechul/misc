@@ -4,7 +4,7 @@ DBGFS=/sys/kernel/debug/palloc
 # system info
 SYSTEM=`hostname`
 CH=1
-NDIMM=2
+NDIMM=1
 
 error()
 {
@@ -20,7 +20,7 @@ set_palloc_config()
 	    if [ $NDIMM -eq 1 ]; then
 		echo "1ch-1DIMM"
 		MASK=0x00183000   # bank bits: 12, 13, 19, 20
-		echo MASK > $DBGFS/palloc_mask
+		echo $MASK > $DBGFS/palloc_mask
 	    elif [ $NDIMM -eq 2 ]; then
 		echo "1ch-2DIMM"
 		MASK=0x00307000   # bank bits: 12, 13, 14, 20, 21
