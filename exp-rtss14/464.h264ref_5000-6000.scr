@@ -1,0 +1,4 @@
+set terminal postscript eps enhanced color "Times-Roman" 22
+set yrange [0:100000]
+set xrange [5000:6000]
+plot '464.h264ref.dat' ti "464.h264ref" w l

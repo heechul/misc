@@ -1,0 +1,4 @@
+set terminal postscript eps enhanced color "Times-Roman" 22
+set yrange [0:100000]
+set xrange [0:10000]
+plot '465.tonto.dat' ti "465.tonto" w l

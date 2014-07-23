@@ -1,0 +1,4 @@
+set terminal postscript eps enhanced color "Times-Roman" 22
+set yrange [0:100000]
+set xrange [5000:6000]
+plot '454.calculix.dat' ti "454.calculix" w l
