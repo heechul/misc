@@ -282,10 +282,9 @@ int main(int argc, char* argv[])
 		printf("list[%d]  0x%p\n", l, &list[l]);
 	}
 
-	assert (use_hugepage ^ use_dev_mem);
+	assert (!(use_hugepage && use_dev_mem));
 	if (use_hugepage) printf("Using hugetlb\n");
 	else if (use_dev_mem) printf("Using /dev/mem (dangerous)\n");
-	else perror("failed to alloc");
 
 #if 0
         param.sched_priority = 1;
