@@ -44,7 +44,11 @@
 #define MAX_MLP 32
 #define PAGE_SIZE (2*1024*1024) /* Huge TLB */
 #define DRAM_PAGE_SIZE (1<<13)  /* DRAM page size = 8KB */
-#define CACHE_LINE_SIZE 64
+#ifdef __arm__
+#  define CACHE_LINE_SIZE 32
+#else
+#  define CACHE_LINE_SIZE 64
+#endif
 
 /**************************************************************************
  * Public Types
@@ -53,7 +57,11 @@
 /**************************************************************************
  * Global Variables
  **************************************************************************/
+#ifdef __arm__
+static int g_mem_size = (4*1024*1024);
+#else
 static int g_mem_size = (16*1024*1024);
+#endif
 static int* list[MAX_MLP];
 static int next[MAX_MLP];
 
