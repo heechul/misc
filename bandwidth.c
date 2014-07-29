@@ -171,7 +171,7 @@ int bench_read_heechul()
 		sum += g_mem_ptr[i];
 	}
 	g_nread += g_mem_size;
-	return 1;
+	return sum;
 }
 
 int bench_write()
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
 	for (i=0;; i++) {
 		switch (acc_type) {
 		case READ:
-			sum += bench_read();
+			sum += bench_read_heechul();
 			break;
 		case WRITE:
 			sum += bench_write();
