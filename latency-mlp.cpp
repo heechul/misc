@@ -235,6 +235,7 @@ int main(int argc, char* argv[])
 
 	for (l = 0; l < mlp; l++) {
 		/* alloc memory. align to a page boundary */
+
 		if (use_hugepage) {
 			memchunk = (int *)mmap(0, 
 					       g_mem_size*2,
@@ -243,7 +244,7 @@ int main(int argc, char* argv[])
 					       -1, 0);
 		} else if (use_dev_mem) {
 			int fd = open("/dev/mem", O_RDWR | O_SYNC);
-			void *addr = (void *) 0x1000000080000000;
+			void *addr = (void *) (0x1000000080000000 + g_mem_size * l);
 			
 			if (fd < 0) {
 				perror("Open failed");
@@ -276,10 +277,9 @@ int main(int argc, char* argv[])
 			// printf("%8d\n", myvector[i]);
 		}
 
-		list[l] = memchunk;
+		list[l] = memchunk; // &memchunk[l * CACHE_LINE_SIZE/4];
 		next[l] = list[l][0];
-
-		printf("list[%d]  0x%p\n", l, memchunk);
+		printf("list[%d]  0x%p\n", l, &list[l]);
 	}
 
 	assert (use_hugepage ^ use_dev_mem);
@@ -295,7 +295,7 @@ int main(int argc, char* argv[])
 #endif
 
 	clock_gettime(CLOCK_REALTIME, &end);
-	printf("Init took %ld us\n", get_elapsed(&start, &end)/1000);
+	printf("Init took %.0f us\n", (double) get_elapsed(&start, &end)/1000);
 
 
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -308,7 +308,7 @@ int main(int argc, char* argv[])
 	double  avglat = (double)nsdiff/naccess;
 
 	printf("size: %d (%d KB)\n", g_mem_size, g_mem_size/1024);
-	printf("duration %ld ns, #access %d\n", nsdiff, naccess);
+	printf("duration %.0f ns, #access %d\n", (double)nsdiff, naccess);
 	printf("bandwidth %.2f MB/s\n", (double)64*1000*naccess/nsdiff);
 
 	return 0;
