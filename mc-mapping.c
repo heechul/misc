@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
 	double  avglat = (double)nsdiff/naccess;
 
 	printf("size: %d (%d KB)\n", g_mem_size, g_mem_size/1024);
-	printf("duration %ld ns, #access %d\n", nsdiff, naccess);
+	printf("duration %.0f ns, #access %d\n", (double)nsdiff, naccess);
 	printf("average latency: %ld ns\n", nsdiff/naccess);
 	printf("bandwidth %.2f MB/s\n", (double)64*1000*naccess/nsdiff);
 

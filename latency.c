@@ -199,9 +199,9 @@ int main(int argc, char* argv[])
 
 	nsdiff = get_elapsed(&start, &end);
 	avglat = (double)nsdiff/workingset_size/repeat;
-	printf("duration %ld us\naverage %.2f ns | ", nsdiff/1000, avglat);
+	printf("duration %.0f us\naverage %.2f ns | ", (double)nsdiff/1000, avglat);
 	printf("bandwidth %.2f MB (%.2f MiB)/s\n",
 	       (double)64*1000/avglat, 
 	       (double)64*1000000000/avglat/1024/1024);
-	printf("readsum  %ld\n", readsum);
+	printf("readsum  %lld\n", (unsigned long long)readsum);
 }

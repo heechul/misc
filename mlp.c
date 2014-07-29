@@ -185,7 +185,7 @@ int main(int argc, char* argv[])
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "b:o:m:c:i:l:ht")) != -1) {
+	while ((opt = getopt(argc, argv, "b:m:c:p:i:ht")) != -1) {
 		switch (opt) {
 		case 'b': /* selected banks */
 			printf("args: %s\n", optarg);
@@ -244,8 +244,8 @@ int main(int argc, char* argv[])
 
 #if 1
 	/* initialize data. icecream, 1CH-1DIMM (16 banks) */
-	int j_shift = 12, i_bits=2;
-	int i_shift = 19, j_bits=2;
+	int j_shift = 12, j_bits=2;
+	int i_shift = 19, i_bits=2;
 #else
 	/* initialize data. icecream, 1CH-2DIMM (32 banks) */
 	int j_shift = 12, i_bits=3;
@@ -287,8 +287,8 @@ int main(int argc, char* argv[])
 	double  avglat = (double)nsdiff/naccess;
 
 	printf("size: %d (%d KB)\n", g_mem_size, g_mem_size/1024);
-	printf("duration %ld ns, #access %d\n", nsdiff, naccess);
-	printf("average latency: %ld ns\n", nsdiff/naccess);
+	printf("duration %.0f ns, #access %d\n", (double)nsdiff, naccess);
+	printf("average latency: %.0f ns\n", (double)nsdiff/naccess);
 	printf("bandwidth %.2f MB/s\n", (double)64*1000*naccess/nsdiff);
 
 	return 0;
