@@ -174,7 +174,6 @@ int main(int argc, char* argv[])
 	int repeat = 100;
 	int mlp = 1;
 	int use_hugepage = 0;
-	int use_dev_mem = 0;
 	struct timespec start, end;
 
 	std::srand (0);
@@ -183,7 +182,7 @@ int main(int argc, char* argv[])
 	/*
 	 * get command line options 
 	 */
-	while ((opt = getopt(argc, argv, "m:c:i:l:htx")) != -1) {
+	while ((opt = getopt(argc, argv, "m:c:i:l:ht")) != -1) {
 		switch (opt) {
 		case 'm': /* set memory size */
 			g_mem_size = 1024 * strtol(optarg, NULL, 0);
@@ -219,9 +218,6 @@ int main(int argc, char* argv[])
                 case 't':
 			use_hugepage = (use_hugepage) ? 0: 1;
 			break;
-                case 'x':
-			use_dev_mem = (use_dev_mem) ? 0: 1;
-			break;
 		}
 
 	}
@@ -246,19 +242,6 @@ int main(int argc, char* argv[])
 					       PROT_READ | PROT_WRITE, 
 					       MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
 					       -1, 0);
-		} else if (use_dev_mem) {
-			int fd = open("/dev/mem", O_RDWR | O_SYNC);
-			void *addr = (void *) (0x1000000080000000 + g_mem_size * l);
-			
-			if (fd < 0) {
-				perror("Open failed");
-				exit(1);
-			}
-			
-			memchunk = (int *)mmap(0, g_mem_size,
-					       PROT_READ | PROT_WRITE, 
-					       MAP_SHARED, 
-					       fd, (off_t)addr);
 		} else {
 			memchunk = (int *)malloc(g_mem_size);
 			printf("Using malloc(), not very accurate\n");
@@ -286,9 +269,7 @@ int main(int argc, char* argv[])
 		printf("list[%d]  0x%p\n", l, &list[l]);
 	}
 
-	assert (!(use_hugepage && use_dev_mem));
 	if (use_hugepage) printf("Using hugetlb\n");
-	else if (use_dev_mem) printf("Using /dev/mem (dangerous)\n");
 
 #if 0
         param.sched_priority = 1;
