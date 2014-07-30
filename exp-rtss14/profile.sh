@@ -95,10 +95,9 @@ do_experiment_solo()
 	echo "flush" > /sys/kernel/debug/palloc/control
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
 	echo $$ > /sys/fs/cgroup/spec2006/tasks
-	taskset -c $corea perf stat -e r01b0 -e r02b0 -e r04b0  -e r08b0 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q  &
-	sleep 10
+	# taskset -c $corea perf stat -e r01b0 -e r02b0 -e r04b0  -e r08b0 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q  &
 	kill_spec
-	# taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -e r80b0 -e r01b2 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q 
+	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -e r80b0 -e r01b2 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q 
 	cat /sys/kernel/debug/tracing/trace > $b.trace
 	IX=`parse_log_instr $b.perf`
 	IX="$IX `parse_log_XXX $b.perf elapsed`"
@@ -126,7 +125,7 @@ do_experiment()
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
 
 	log_echo "corun w/ bandwidth -a write -m 16384"
-	for cpu in 1 2; do 
+	for cpu in 1 2 3; do 
 	    echo $$ > /sys/fs/cgroup/core$cpu/tasks; bandwidth -m 16384 -a write -c $cpu -t 1000000000 &
 	done
 	echo $$ > /sys/fs/cgroup/spec2006/tasks
@@ -232,7 +231,9 @@ spec2006_xeon_rtss14="462.libquantum
 416.gamess"
 
 # benchb="$spec2006_xeon_rtss14"
-benchb=453.povray
+# benchb=453.povray
+benchb=403.gcc
+# 450.soplex
 #416.gamess
 init_system
 set_cpus "1 1 1 1"
@@ -250,6 +251,6 @@ if [ "$mode" = "corun" ]; then
     do_experiment    
 else
     do_experiment_solo
-    do_graph
-    do_print_stat >> bench.stat
+    #do_graph
+    #do_print_stat >> bench.stat
 fi

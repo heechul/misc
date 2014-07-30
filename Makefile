@@ -1,4 +1,4 @@
-CC=gcc
+ CC=gcc
 PGMS=mc-mapping latency latency-mlp bandwidth fps mlp pagetype devmem2 hrt hrt-rand
 
 CFLAGS=-Wall

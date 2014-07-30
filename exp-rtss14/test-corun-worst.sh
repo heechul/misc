@@ -95,17 +95,17 @@ SPECBASE=/ssd/cpu2006/benchspec/CPU2006
 for i in `seq 1 $repeat`; do
     # runbench 470.lbm "./lbm_base.gcc43-64bit 60 reference.dat 0 0 100_100_130_ldc.of" # 9.9s
 
-    runspecbench 462.libquantum "./libquantum_base.gcc43-64bit 244 8" solo # 4.146s
-    runspecbench 462.libquantum "./libquantum_base.gcc43-64bit 244 8" corun # 4.146s
+    # runspecbench 462.libquantum "./libquantum_base.gcc43-64bit 244 8" solo # 4.146s
+    # runspecbench 462.libquantum "./libquantum_base.gcc43-64bit 244 8" corun # 4.146s
 
-    runspecbench 482.sphinx3 "./sphinx_livepretend_base.gcc43-64bit ctlfile_small . args.an4" solo
-    runspecbench 482.sphinx3 "./sphinx_livepretend_base.gcc43-64bit ctlfile_small . args.an4" corun
+    # runspecbench 482.sphinx3 "./sphinx_livepretend_base.gcc43-64bit ctlfile_small . args.an4" solo
+    # runspecbench 482.sphinx3 "./sphinx_livepretend_base.gcc43-64bit ctlfile_small . args.an4" corun
 
     # runspecbench_buddy 450.soplex "./soplex_base.gcc43-64bit -m500 pds-50.mps" solo
     # runspecbench_buddy 450.soplex "./soplex_base.gcc43-64bit -m500 pds-50.mps" corun
 
-    runspecbench 450.soplex "./soplex_base.gcc43-64bit -m500 pds-50.mps" solo
-    runspecbench 450.soplex "./soplex_base.gcc43-64bit -m500 pds-50.mps" corun
+    # runspecbench 450.soplex "./soplex_base.gcc43-64bit -m500 pds-50.mps" solo
+    # runspecbench 450.soplex "./soplex_base.gcc43-64bit -m500 pds-50.mps" corun
 
     # runspecbench 483.xalancbmk "./Xalan_base.gcc43-64bit -v t5.xml xalanc.xsl" solo
     # runspecbench 483.xalancbmk "./Xalan_base.gcc43-64bit -v t5.xml xalanc.xsl" corun
