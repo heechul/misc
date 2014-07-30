@@ -1,4 +1,0 @@
-set terminal postscript eps enhanced color "Times-Roman" 22
-set yrange [0:100000]
-set xrange [0:10000]
-plot '483.xalancbmk.dat' ti "483.xalancbmk" w l

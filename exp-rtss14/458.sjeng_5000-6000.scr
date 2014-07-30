@@ -1,4 +1,0 @@
-set terminal postscript eps enhanced color "Times-Roman" 22
-set yrange [0:100000]
-set xrange [5000:6000]
-plot '458.sjeng.dat' ti "458.sjeng" w l
