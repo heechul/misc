@@ -44,11 +44,7 @@
 #define MAX_MLP 32
 #define PAGE_SIZE (2*1024*1024) /* Huge TLB */
 #define DRAM_PAGE_SIZE (1<<13)  /* DRAM page size = 8KB */
-#ifdef __arm__
-#  define CACHE_LINE_SIZE 32
-#else
-#  define CACHE_LINE_SIZE 64
-#endif
+#define CACHE_LINE_SIZE 64
 
 /**************************************************************************
  * Public Types
