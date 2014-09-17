@@ -73,6 +73,13 @@ int cpuid = 0;
  **************************************************************************/
 unsigned int get_usecs()
 {
+	struct timeval         time;
+	gettimeofday(&time, NULL);
+	return (time.tv_sec * 1000000 +	time.tv_usec);
+}
+
+unsigned int get_usecs_elapsed()
+{
 	static struct timeval  base;
 	struct timeval         time;
 	gettimeofday(&time, NULL);
