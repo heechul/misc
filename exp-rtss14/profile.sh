@@ -2,10 +2,59 @@
 
 . ./functions
 
-[ ! -z "$2" ] && outputfile=$2
-
 echo "LLC miss evt: 0x${llc_miss_evt}"
 echo "arch bit: ${archbit}bit"
+
+# r2a2 load buffer full
+# r4a2 RS full
+# r8a2 store buffer full
+# r10a2 ROB full
+# perf_hwevents="instructions r2a2 r4a2 r8a2 r10a2"
+
+# L3 miss, L2 miss, resource stall, GQ stall
+perf_hwevents="instructions r412e r224 r1a2 r1f6"
+
+# uncore/event=0x00,umask=0x01  GQ read full
+# uncore/event=0x00,umask=0x02  GQ write full
+perf_hwevents_unc="uncore/event=0x00,umask=0x01/ uncore/event=0x00,umask=0x02/ uncore/event=0x01,umask=0x01/"
+
+get_perf_hwevent_str()
+{
+    local str=""
+    for evt in $perf_hwevents; do
+	str="$str -e ${evt}:u"
+    done
+    echo "$str"
+}
+
+get_perf_hwevent_unc_str()
+{
+    local str=""
+    for evt in $perf_hwevents_unc; do
+	str="$str -e ${evt}"
+    done
+    echo "$str"
+}
+
+parse_perf_log()
+{
+    f=$1
+    val=`grep elapsed $f | awk '{ print $1 }' | sed "s/,//g"`
+    if [ -f "$f" ]; then
+	for counter in $perf_hwevents; do
+	    [[ $counter == r* ]] && cstr=${counter:1} || cstr=$counter
+	    val="$val `grep $cstr $f | awk '{ print $1 }' | sed "s/,//g"`"
+	done
+    fi
+    echo $val
+}
+
+parse_uncore_log()
+{
+    f=$1
+    val=`grep attr $f | awk '{ print $1 }' | sed "s/,//g"`
+    echo $val
+}
 
 set_buddy()
 {
@@ -35,7 +84,7 @@ set_cgroup_bins()
     cg="$1"
     bins="$2"
     log_echo "Bins[$bins]"
-    echo 240000000 > /sys/fs/cgroup/$cg/memory.limit_in_bytes || error "No cgroup $cg"
+    echo 250000000 > /sys/fs/cgroup/$cg/memory.limit_in_bytes || error "No cgroup $cg"
     echo $bins  > /sys/fs/cgroup/$cg/palloc.bins || error "Bins $bins error"
     echo $$ > /sys/fs/cgroup/$cg/tasks
 
@@ -60,24 +109,6 @@ EOF
     epspdf  ${file}.eps
 }
 
-parse_log_instr()
-{
-    f=$1
-    if [ -f "$f" ]; then
-	instr=`grep instructions $f | awk '{ print $1 }' | sed "s/,//g"`
-	echo $instr
-    fi
-}
-
-parse_log_XXX()
-{
-    f=$1
-    counter=$2
-    if [ -f "$f" ]; then
-	instr=`grep $counter $f | awk '{ print $1 }' | sed "s/,//g"`
-	echo $instr
-    fi
-}
 
 # do experiment
 do_experiment_solo()
@@ -88,22 +119,32 @@ do_experiment_solo()
 
     # chrt -f -p 1 $$
 
-    echo "bench inst elapsed llc offcore sq_full"
+    echo "bench inst elapsed llc l2 rob gq"
     for b in $benchb; do
 	# echo $b
 	echo "" > /sys/kernel/debug/tracing/trace
 	echo "flush" > /sys/kernel/debug/palloc/control
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
 	echo $$ > /sys/fs/cgroup/spec2006/tasks
-	# taskset -c $corea perf stat -e r01b0 -e r02b0 -e r04b0  -e r08b0 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q  &
 	kill_spec
-	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -e r80b0 -e r01b2 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q 
+	taskset -c 1 perf stat -o $b.uncore.solo -a `get_perf_hwevent_unc_str` sleep 8000 &
+	taskset -c $corea perf stat `get_perf_hwevent_str` -o $b.perf.solo /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_${workload}_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q 
 	cat /sys/kernel/debug/tracing/trace > $b.trace
-	IX=`parse_log_instr $b.perf`
-	IX="$IX `parse_log_XXX $b.perf elapsed`"
-	IX="$IX `parse_log_XXX $b.perf 412e` `parse_log_XXX $b.perf 80b0` `parse_log_XXX $b.perf 1b2`"
+	IX=`parse_perf_log $b.perf.solo`
+	IX="$IX `parse_uncore_log $b.uncore.solo`"
 	log_echo $b $IX
 	sync
+    done
+}
+
+do_load()
+{
+    local type=$1
+    local size_kb=$2
+    log_echo "corun w/ bandwidth -a $type -m $size_kb"
+    for cpu in 1 2 3; do 
+	echo $$ > /sys/fs/cgroup/core$cpu/tasks
+	bandwidth -m $size_kb -a $type -c $cpu -t 1000000000 &
     done
 }
 
@@ -124,18 +165,19 @@ do_experiment()
 	echo 1 > /sys/kernel/debug/palloc/debug_level
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
 
-	log_echo "corun w/ bandwidth -a write -m 16384"
-	for cpu in 1 2 3; do 
-	    echo $$ > /sys/fs/cgroup/core$cpu/tasks; bandwidth -m 16384 -a write -c $cpu -t 1000000000 &
-	done
+	do_load read 16384
+
 	echo $$ > /sys/fs/cgroup/spec2006/tasks
 	# -e r01b0 -e r02b0 -e r04b0  -e r08b0
-	taskset -c $corea perf stat -e r$llc_miss_evt:u,instructions:u -e r08b0 -o $b.perf /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_ref_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q
+
+	taskset -c 1 perf stat -o $b.uncore.corun -a `get_perf_hwevent_unc_str` sleep 8000 &
+	taskset -c $corea perf stat `get_perf_hwevent_str` -o $b.perf.corun /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_${workload}_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q
 	killall -9 bandwidth >& /dev/null
+	killall -1 sleep
 	cat /sys/kernel/debug/tracing/trace > $b.trace
 	
-	IX=`parse_log_instr $b.perf`
-	IX="$IX `parse_log_XXX $b.perf elapsed`"
+	IX=`parse_perf_log $b.perf.corun`
+	IX="$IX `parse_uncore_log $b.uncore.corun`"
 	log_echo $b $IX
 	sync
     done
@@ -230,9 +272,54 @@ spec2006_xeon_rtss14="462.libquantum
 453.povray
 416.gamess"
 
+spec2006_xeon_rtas15_sorted="462.libquantum
+482.sphinx3
+437.leslie3d
+450.soplex
+471.omnetpp
+465.tonto
+445.gobmk
+456.hmmer
+454.calculix
+458.sjeng
+435.gromacs
+464.h264ref
+444.namd
+416.gamess
+453.povray"
+
+spec2006_xeon_rtas15_sorted_hi="462.libquantum
+482.sphinx3
+437.leslie3d
+450.soplex
+471.omnetpp
+465.tonto"
+
+spec2006_xeon_rtas15_sorted_lo="445.gobmk
+456.hmmer
+454.calculix
+458.sjeng
+435.gromacs
+464.h264ref
+444.namd
+416.gamess
+453.povray"
+
+
+benchb="$spec2006_xeon_rtas15_sorted"
+# benchb="453.povray"
 # benchb="$spec2006_xeon_rtss14"
+# benchb=445.gobmk
+# benchb=456.hmmer
+#435.gromacs
+#400.perlbench
+#464.h264ref
+#416.gamess"
+# benchb="400.perlbench"
+
+# benchb="445.gobmk 456.hmmer 435.gromacs 464.h264ref 444.namd 416.gamess 453.povray"
 # benchb=453.povray
-benchb=403.gcc
+
 # 450.soplex
 #416.gamess
 init_system
@@ -241,8 +328,11 @@ set_cpus "1 1 1 1"
 # do_init "100,100,100,100"
 corea=0
 mode=$1
+workload="ref"   # ref | test | train
 
 [ -z "$mode" ] && error "Usage: $0 <solo|corun>"
+[ ! -z "$2" ] && outputfile=$2
+[ ! -z "$3" ] && workload=$3
 
 print_sysinfo
 set_pbpc

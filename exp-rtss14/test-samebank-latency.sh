@@ -73,9 +73,9 @@ if [ ! -d "/sys/fs/cgroup/corun_samebank" ]; then
     exit
 fi
 
-# set_pbpc
+set_pbpc
 # set_buddy
-set_worst
+# set_worst
 
 # log_echo "diffbank [0,4,8,12] experiments"
 
@@ -116,11 +116,13 @@ cleanup >& /dev/null
 
 # mlp=1
 # log_echo "case3: latency vs. latency-mlp -l $mlp"
-log_echo "case3: latency vs. bandwidth -a write"
+log_echo "case3: latency -s vs. bandwidth -a write"
 # log_echo "case3: latency vs. spec"
 
 echo $$ > /sys/fs/cgroup/spec2006/tasks
-output=`latency -m $size_in_kb -c 0 -i 100 2> /dev/null`
+
+time latency -s -m $size_in_kb -c 0 -i 100 2
+output=`latency -s -m $size_in_kb -c 0 -i 100 2> /dev/null`
 print_latency "$output"
 
 for cpu in `seq 1 $MAXCPU`; do 
@@ -130,8 +132,9 @@ for cpu in `seq 1 $MAXCPU`; do
     # run_bench 462.libquantum $cpu &
     sleep 3
     echo $$ > /sys/fs/cgroup/spec2006/tasks
-    output=`latency -m $size_in_kb -c 0 -i 100 2> /dev/null`
+    output=`latency -s -m $size_in_kb -c 0 -i 100 2> /dev/null`
     print_latency "$output"
+time latency -s -m $size_in_kb -c 0 -i 100 2
 #    cleanup >& /dev/null
 done	
 cleanup >& /dev/null

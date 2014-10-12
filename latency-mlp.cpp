@@ -81,10 +81,10 @@ uint64_t get_elapsed(struct timespec *start, struct timespec *end)
 /**************************************************************************
  * Implementation
  **************************************************************************/
-int run(int iter, int mlp)
+long run(long iter, int mlp)
 {
-	int i;
-	int cnt = 0;
+	long i;
+	long cnt = 0;
 
 	for (i = 0; i < iter; i++) {
 		switch (mlp) {
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
 	int opt, prio;
 	int i,j,k,l;
 
-	int repeat = 100;
+	long repeat = 100;
 	int mlp = 1;
 	int use_hugepage = 0;
 	struct timespec start, end;
@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
 			break;
 		case 'i': /* iterations */
 			repeat = strtol(optarg, NULL, 0);
-			fprintf(stderr, "repeat=%d\n", repeat);
+			fprintf(stderr, "repeat=%ld\n", repeat);
 			break;
 		case 'l': /* MLP */
 			mlp = strtol(optarg, NULL, 0);
@@ -242,13 +242,17 @@ int main(int argc, char* argv[])
 					       PROT_READ | PROT_WRITE, 
 					       MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
 					       -1, 0);
+			if ((void *)memchunk == MAP_FAILED) {
+				perror("alloc failed");
+				exit(1);
+			}
 		} else {
 			memchunk = (int *)malloc(g_mem_size);
+			if (memchunk == NULL) {
+				perror("alloc failed");
+				exit(1);
+			}
 			printf("Using malloc(), not very accurate\n");
-		}
-
-		if ((void *)memchunk == MAP_FAILED) {
-			exit(1);
 		}
 
 		/* initialize data */
@@ -266,7 +270,7 @@ int main(int argc, char* argv[])
 
 		list[l] = memchunk; // &memchunk[l * CACHE_LINE_SIZE/4];
 		next[l] = list[l][0];
-		printf("list[%d]  0x%p\n", l, &list[l]);
+		printf("list[%d]  0x%p\n", l, list[l]);
 	}
 
 	if (use_hugepage) printf("Using hugetlb\n");
@@ -284,7 +288,7 @@ int main(int argc, char* argv[])
 
 	clock_gettime(CLOCK_REALTIME, &start);
 	/* actual access */
-	int naccess = run(ws*repeat, mlp);
+	long naccess = run(repeat * ws, mlp);
 
 	clock_gettime(CLOCK_REALTIME, &end);
 
@@ -292,7 +296,7 @@ int main(int argc, char* argv[])
 	double  avglat = (double)nsdiff/naccess;
 
 	printf("size: %d (%d KB)\n", g_mem_size, g_mem_size/1024);
-	printf("duration %.0f ns, #access %d\n", (double)nsdiff, naccess);
+	printf("duration %.0f ns, #access %ld\n", (double)nsdiff, naccess);
 	printf("bandwidth %.2f MB/s\n", (double)64*1000*naccess/nsdiff);
 
 	return 0;

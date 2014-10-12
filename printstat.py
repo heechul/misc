@@ -27,8 +27,6 @@ def main():
             assert False, "unhandled option"
 
 
-    print "deadline: ", deadline
-
     file1 = open(args[0], 'r')
             
     items = []
@@ -46,24 +44,25 @@ def main():
         if deadline > 0 and num > deadline:
             deadline_miss += 1
             
-    stats = corestats.Stats(items)
+    # stats = corestats.Stats(items)
+    stats = corestats.Stats(items[1:(len(items)-1)]) # remove first and last.
     print 
     print "----[", args[0], "]---"
+    print "deadline: ", deadline
     print "count: ", stats.count()
     print "deadline miss: ", deadline_miss
-    print "deadline miss ratio: (%f)" % (float(deadline_miss) / stats.count())
-    print "min: ", stats.min()
-    print "avg: ", stats.avg()
-    print "90pctile: ", stats.percentile(90)
-    print "95pctile: ", stats.percentile(95)
-    print "99pctile: ", stats.percentile(99)
+    print "deadline miss ratio: %.2f pct" % (float(deadline_miss) * 100 / stats.count())
+    print "min: %.2f" % stats.min()
+    print "avg: %.2f" % stats.avg()
+    print "90pctile: %.2f" % stats.percentile(90)
+    print "95pctile: %.2f" % stats.percentile(95)
+    print "99pctile: %.2f" %stats.percentile(99)
     #print "median: ", stats.median()
-    print "max: ", stats.max()
-    print "stdev: ", stats.stdev()
+    print "max: %.2f" % stats.max()
+    print "stdev: %.2f" % stats.stdev()
     #avg  min max 99pctile
-    print "LINE(avg|min|max|99pct|stdev|median): ", stats.avg(), \
-        stats.min(), stats.max(), stats.percentile(99), stats.stdev(), stats.median()
-
+    print "LINE(avg|min|max|99pct|stdev|median): %.2f %.2f %.2f %.2f %.2f %.2f\n" % (stats.avg(), \
+        stats.min(), stats.max(), stats.percentile(99), stats.stdev(), stats.median())
 
 if __name__ == "__main__":
     main()
