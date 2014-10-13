@@ -11,12 +11,19 @@ echo "arch bit: ${archbit}bit"
 # r10a2 ROB full
 # perf_hwevents="instructions r2a2 r4a2 r8a2 r10a2"
 
-# L3 miss, L2 miss, resource stall, GQ stall
-perf_hwevents="instructions r412e r224 r1a2 r1f6"
+# L3 miss, L2 miss, resource stall, SQ stall
+perf_hwevents="instructions r412e raa24 r1a2 r1f6"
 
 # uncore/event=0x00,umask=0x01  GQ read full
 # uncore/event=0x00,umask=0x02  GQ write full
-perf_hwevents_unc="uncore/event=0x00,umask=0x01/ uncore/event=0x00,umask=0x02/ uncore/event=0x01,umask=0x01/"
+# uncore/event=0x01,umask=0x01  GQ RT not empty 
+# uncore/event=0x02,umask=0x01  GQ RT occupancy
+# uncore/event=0x03,umask=0x01  GQ RT alloc cnt
+# uncore/event=0x02,umask=0x02  GQ RT llc miss occupancy
+# uncore/event=0x03,umask=0x02  GQ RT llc miss alloc
+# uncore/event=0x2a,umask=0x01  GQ IMC ch0 read occupancy
+# uncore/event=0x62,umask=0x01  GQ DRAM ch0 row miss
+perf_hwevents_unc="uncore/event=0x00,umask=0x01/ uncore/event=0x01,umask=0x01/ uncore/event=0x02,umask=0x01/ uncore/event=0x03,umask=0x01/ uncore/event=0x02,umask=0x02/ uncore/event=0x03,umask=0x02/ uncore/event=0x2a,umask=0x04/ uncore/event=0x62,umask=0x04/"
 
 get_perf_hwevent_str()
 {
@@ -113,6 +120,7 @@ EOF
 # do experiment
 do_experiment_solo()
 {
+    local runcmd
     if [ `whoami` != "root" ]; then
 	error "root perm. is needed"
     fi
@@ -128,7 +136,20 @@ do_experiment_solo()
 	echo $$ > /sys/fs/cgroup/spec2006/tasks
 	kill_spec
 	taskset -c 1 perf stat -o $b.uncore.solo -a `get_perf_hwevent_unc_str` sleep 8000 &
-	taskset -c $corea perf stat `get_perf_hwevent_str` -o $b.perf.solo /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_${workload}_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q 
+	if [ "$b" = "bw_write_1M" ]; then
+	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a write"
+	elif [ "$b" = "bw_read_1M" ]; then
+	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a read"
+	elif [ "$b" = "latency_1M" ]; then
+	    runcmd="./latency -m 1024 -i 5000"
+	elif [ "$b" = "latency_16M" ]; then
+	    runcmd="./latency -m 16384 -i 100"
+	else
+	    runcmd="/ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_${workload}_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q"
+	fi
+	taskset -c $corea perf stat `get_perf_hwevent_str` -o $b.perf.solo $runcmd
+	killall -1 sleep
+	sleep 1 
 	cat /sys/kernel/debug/tracing/trace > $b.trace
 	IX=`parse_perf_log $b.perf.solo`
 	IX="$IX `parse_uncore_log $b.uncore.solo`"
@@ -165,16 +186,28 @@ do_experiment()
 	echo 1 > /sys/kernel/debug/palloc/debug_level
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
 
-	do_load read 16384
+	do_load $coruntype $corunsize
 
 	echo $$ > /sys/fs/cgroup/spec2006/tasks
 	# -e r01b0 -e r02b0 -e r04b0  -e r08b0
 
 	taskset -c 1 perf stat -o $b.uncore.corun -a `get_perf_hwevent_unc_str` sleep 8000 &
-	taskset -c $corea perf stat `get_perf_hwevent_str` -o $b.perf.corun /ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_${workload}_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q
+	if [ "$b" = "bw_write_1M" ]; then
+	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a write"
+	elif [ "$b" = "bw_read_1M" ]; then
+	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a read"
+	elif [ "$b" = "latency_1M" ]; then
+	    runcmd="./latency -m 1024 -i 5000"
+	elif [ "$b" = "latency_16M" ]; then
+	    runcmd="./latency -m 16384 -i 100"
+	else
+	    runcmd="/ssd/cpu2006/bin/specinvoke -d /ssd/cpu2006/benchspec/CPU2006/$b/run/run_base_${workload}_gcc43-${archbit}bit.0000 -e speccmds.err -o speccmds.stdout -f speccmds.cmd -C -q"
+	fi
+	taskset -c $corea perf stat `get_perf_hwevent_str` -o $b.perf.corun $runcmd
 	killall -9 bandwidth >& /dev/null
 	killall -1 sleep
 	cat /sys/kernel/debug/tracing/trace > $b.trace
+	sleep 1 
 	
 	IX=`parse_perf_log $b.perf.corun`
 	IX="$IX `parse_uncore_log $b.uncore.corun`"
@@ -305,8 +338,10 @@ spec2006_xeon_rtas15_sorted_lo="445.gobmk
 416.gamess
 453.povray"
 
-
-benchb="$spec2006_xeon_rtas15_sorted"
+benchb="bw_read_1M"
+# benchb="458.sjeng 453.povray 471.omnetpp 462.libquantum"
+# benchb="471.omnetpp 462.libquantum"
+# benchb="$spec2006_xeon_rtas15_sorted"
 # benchb="453.povray"
 # benchb="$spec2006_xeon_rtss14"
 # benchb=445.gobmk
@@ -329,10 +364,15 @@ set_cpus "1 1 1 1"
 corea=0
 mode=$1
 workload="ref"   # ref | test | train
+corunsize=16384
+coruntype=read
 
 [ -z "$mode" ] && error "Usage: $0 <solo|corun>"
 [ ! -z "$2" ] && outputfile=$2
 [ ! -z "$3" ] && workload=$3
+[ ! -z "$4" ] && corunsize=$4
+[ ! -z "$5" ] && coruntype=$5
+[ ! -z "$6" ] && benchb=$6
 
 print_sysinfo
 set_pbpc
