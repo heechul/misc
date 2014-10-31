@@ -14,6 +14,7 @@ echo "arch bit: ${archbit}bit"
 # L3 miss, L2 miss, resource stall, SQ stall
 perf_hwevents="instructions r412e raa24 r1a2 r1f6"
 
+# GQ statistics 
 # uncore/event=0x00,umask=0x01  GQ read full
 # uncore/event=0x00,umask=0x02  GQ write full
 # uncore/event=0x01,umask=0x01  GQ RT not empty 
@@ -23,8 +24,26 @@ perf_hwevents="instructions r412e raa24 r1a2 r1f6"
 # uncore/event=0x03,umask=0x02  GQ RT llc miss alloc
 # uncore/event=0x2a,umask=0x01  GQ IMC ch0 read occupancy
 # uncore/event=0x62,umask=0x01  GQ DRAM ch0 row miss
-perf_hwevents_unc="uncore/event=0x00,umask=0x01/ uncore/event=0x01,umask=0x01/ uncore/event=0x02,umask=0x01/ uncore/event=0x03,umask=0x01/ uncore/event=0x02,umask=0x02/ uncore/event=0x03,umask=0x02/ uncore/event=0x2a,umask=0x04/ uncore/event=0x62,umask=0x04/"
+# perf_hwevents_unc="uncore/event=0x00,umask=0x01/ uncore/event=0x01,umask=0x01/ uncore/event=0x02,umask=0x01/ uncore/event=0x03,umask=0x01/ uncore/event=0x02,umask=0x02/ uncore/event=0x03,umask=0x02/ uncore/event=0x2a,umask=0x04/ uncore/event=0x62,umask=0x04/"
 
+# DRAM statistics
+# UNC_QMC_NORMAL_READS.ANY IMC normal read requests  07 2C
+# UNC_QMC_WRITES.FULL.ANY IMC full cache line writes 07 2F
+# UNC_DRAM_OPEN.CH2 DRAM Channel 2 open commands    04 60
+# UNC_DRAM_PAGE_CLOSE.CH2 DRAM Channel 2 page close  04 61
+# UNC_DRAM_PAGE_MISS.CH2 DRAM Channel 2 page miss    04 62
+# UNC_DRAM_READ_CAS.CH2  DRAM Channel 2 read CAS     10 63
+# UNC_DRAM_WRITE_CAS.CH2 DRAM Channel 2 write CAS   10 64
+perf_hwevents_unc="uncore/event=0x2C,umask=0x07/ uncore/event=0x2F,umask=0x07/ uncore/event=0x60,umask=0x04/ uncore/event=0x61,umask=0x04/ uncore/event=0x62,umask=0x04/ uncore/event=0x63,umask=0x10/ uncore/event=0x64,umask=0x10/"
+
+# additional DRAM statistics
+# UNC_QMC_NORMAL_FULL.READ.CH2 read request queue full   04 27
+# UNC_QMC_NORMAL_FULL.WRITE.CH2 write request queue full 20 27
+# UNC_QMC_OCCUPANCY.CH2  read request occupancy          04 2A
+# 
+# average DRAM read req latency = 
+#   UNC_QMC_OCCUPANCY.CH2 / UNC_QMC_NORMAL_FULL.READ.CH2
+# 
 get_perf_hwevent_str()
 {
     local str=""
@@ -133,6 +152,7 @@ do_experiment_solo()
 	echo "" > /sys/kernel/debug/tracing/trace
 	echo "flush" > /sys/kernel/debug/palloc/control
 	echo 1 > /proc/sys/vm/drop_caches # free file caches
+
 	echo $$ > /sys/fs/cgroup/spec2006/tasks
 	kill_spec
 	taskset -c 1 perf stat -o $b.uncore.solo -a `get_perf_hwevent_unc_str` sleep 8000 &
@@ -140,6 +160,8 @@ do_experiment_solo()
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a write"
 	elif [ "$b" = "bw_read_1M" ]; then
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a read"
+	elif [ "$b" = "bw_read_16M" ]; then
+	    runcmd="./bandwidth -m 16384 -t 1000000 -i 3000 -a read"
 	elif [ "$b" = "latency_1M" ]; then
 	    runcmd="./latency -m 1024 -i 5000"
 	elif [ "$b" = "latency_16M" ]; then
@@ -196,6 +218,8 @@ do_experiment()
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a write"
 	elif [ "$b" = "bw_read_1M" ]; then
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a read"
+	elif [ "$b" = "bw_read_16M" ]; then
+	    runcmd="./bandwidth -m 16384 -t 1000000 -i 3000 -a read"
 	elif [ "$b" = "latency_1M" ]; then
 	    runcmd="./latency -m 1024 -i 5000"
 	elif [ "$b" = "latency_16M" ]; then
@@ -308,7 +332,6 @@ spec2006_xeon_rtss14="462.libquantum
 spec2006_xeon_rtas15_sorted="462.libquantum
 482.sphinx3
 437.leslie3d
-450.soplex
 471.omnetpp
 465.tonto
 445.gobmk
@@ -324,7 +347,6 @@ spec2006_xeon_rtas15_sorted="462.libquantum
 spec2006_xeon_rtas15_sorted_hi="462.libquantum
 482.sphinx3
 437.leslie3d
-450.soplex
 471.omnetpp
 465.tonto"
 
@@ -338,10 +360,10 @@ spec2006_xeon_rtas15_sorted_lo="445.gobmk
 416.gamess
 453.povray"
 
-benchb="bw_read_1M"
+# benchb="bw_read_1M"
 # benchb="458.sjeng 453.povray 471.omnetpp 462.libquantum"
 # benchb="471.omnetpp 462.libquantum"
-# benchb="$spec2006_xeon_rtas15_sorted"
+benchb="$spec2006_xeon_rtas15_sorted"
 # benchb="453.povray"
 # benchb="$spec2006_xeon_rtss14"
 # benchb=445.gobmk

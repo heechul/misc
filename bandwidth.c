@@ -78,22 +78,6 @@ unsigned int get_usecs()
 	return (time.tv_sec * 1000000 +	time.tv_usec);
 }
 
-unsigned int get_usecs_elapsed()
-{
-	static struct timeval  base;
-	struct timeval         time;
-	gettimeofday(&time, NULL);
-	if (!base.tv_usec) {
-		base = time;
-	}
-	if (base.tv_usec > time.tv_usec)
-		return ((time.tv_sec - 1 - base.tv_sec) * 1000000 +
-			(1000000 + time.tv_usec - base.tv_usec));
-	else
-		return ((time.tv_sec - base.tv_sec) * 1000000 +
-			(time.tv_usec - base.tv_usec));
-}
-
 void quit(int param)
 {
 	float dur_in_sec;
