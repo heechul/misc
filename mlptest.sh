@@ -5,12 +5,12 @@
 . ./floatfunc
 
 if [ -z "$1" -o -z "$2" ]; then
-    echo "usage: mlptest.sh <corun> <mlp>"
+    echo "usage: mlptest.sh <mlp> <corun>"
     exit 1
 fi
 
-corun=$1
-mlp=$2
+mlp=$1
+corun=$2
 
 ALLOC_MODE="-t" # -t: huge tlbe, -x: /dev/mem"
 killall latency-mlp >& /dev/null

@@ -1,7 +1,7 @@
 /**
- * 
+ * mlp: memory-level-parallelism (MLP) detector
  *
- * Copyright (C) 2013  Heechul Yun <heechul@illinois.edu> 
+ * Copyright (C) 2015  Heechul Yun <heechul.yun@ku.edu> 
  *
  * This file is distributed under the University of Illinois Open Source
  * License. See LICENSE.TXT for details.
@@ -15,7 +15,6 @@
 /**************************************************************************
  * Included Files
  **************************************************************************/
-// random_shuffle example
 #include <iostream>     // std::cout
 #include <algorithm>    // std::random_shuffle
 #include <vector>       // std::vector
@@ -42,9 +41,13 @@
  * Public Definitions
  **************************************************************************/
 #define MAX_MLP 32
-#define PAGE_SIZE (2*1024*1024) /* Huge TLB */
-#define DRAM_PAGE_SIZE (1<<13)  /* DRAM page size = 8KB */
 #define CACHE_LINE_SIZE 64
+#ifdef __arm__
+#  define DEFAULT_ALLOC_SIZE_KB 4096
+#else
+#  define DEFAULT_ALLOC_SIZE_KB 16384
+#endif
+#define DEFAULT_ITER 100
 
 /**************************************************************************
  * Public Types
@@ -53,11 +56,7 @@
 /**************************************************************************
  * Global Variables
  **************************************************************************/
-#ifdef __arm__
-static int g_mem_size = (4*1024*1024);
-#else
-static int g_mem_size = (16*1024*1024);
-#endif
+static int g_mem_size = (DEFAULT_ALLOC_SIZE_KB*1024);
 static int* list[MAX_MLP];
 static int next[MAX_MLP];
 
@@ -67,15 +66,10 @@ static int next[MAX_MLP];
 uint64_t get_elapsed(struct timespec *start, struct timespec *end)
 {
 	uint64_t dur;
-	if (start->tv_nsec > end->tv_nsec)
-		dur = (uint64_t)(end->tv_sec - 1 - start->tv_sec) * 1000000000 +
-			(1000000000 + end->tv_nsec - start->tv_nsec);
-	else
-		dur = (uint64_t)(end->tv_sec - start->tv_sec) * 1000000000 +
-			(end->tv_nsec - start->tv_nsec);
 
+	dur = ((uint64_t)end->tv_sec * 1000000000 + end->tv_nsec) - 
+		((uint64_t)start->tv_sec * 1000000000 + start->tv_nsec);
 	return dur;
-
 }
 
 /**************************************************************************
@@ -171,7 +165,7 @@ int main(int argc, char* argv[])
 	int opt, prio;
 	int i,j,k,l;
 
-	long repeat = 100;
+	long repeat = DEFAULT_ITER;
 	int mlp = 1;
 	int use_hugepage = 0;
 	struct timespec start, end;
@@ -238,7 +232,7 @@ int main(int argc, char* argv[])
 
 		if (use_hugepage) {
 			memchunk = (int *)mmap(0, 
-					       g_mem_size*2,
+					       g_mem_size,
 					       PROT_READ | PROT_WRITE, 
 					       MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, 
 					       -1, 0);
