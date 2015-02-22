@@ -49,11 +49,8 @@ enum access_type { READ, WRITE};
 int g_mem_size = DEFAULT_ALLOC_SIZE_KB * 1024;	   /* memory size */
 int *g_mem_ptr = 0;		   /* pointer to allocated memory region */
 
-FILE *g_fd = NULL;			
-char *g_label = NULL;
-
-uint64_t g_nread = 0;	           /* number of bytes read */
-unsigned int g_start;		   /* starting time */
+volatile uint64_t g_nread = 0;	           /* number of bytes read */
+volatile unsigned int g_start;		   /* starting time */
 int cpuid = 0;
 
 /**************************************************************************
@@ -77,18 +74,13 @@ void quit(int param)
 	bw = (float)g_nread / dur_in_sec / 1024 / 1024;
 	printf("CPU%d: B/W = %.2f MB/s | ",cpuid, bw);
 	printf("CPU%d: average = %.2f ns\n", cpuid, (dur*1000)/(g_nread/CACHE_LINE_SIZE));
-
-	if (g_fd) {
-		fprintf(g_fd, "%s %d\n", g_label, (int)bw);
-		fclose(g_fd);
-	}
 	exit(0);
 }
 
-int bench_read()
+int64_t bench_read()
 {
-	register int i;	
-	register int sum = 0;
+	int i;	
+	int64_t sum = 0;
 	for ( i = 0; i < g_mem_size/4; i+=(CACHE_LINE_SIZE/4) ) {
 		sum += g_mem_ptr[i];
 	}
@@ -125,7 +117,7 @@ void usage(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	long sum = 0;
+	int64_t sum = 0;
 	unsigned finish = 5;
 	int prio = 0;        
 	int num_processors;
@@ -177,15 +169,6 @@ int main(int argc, char *argv[])
 		case 'i': /* iterations */
 			iterations = strtol(optarg, NULL, 0);
 			break;
-		case 'l': /* set label */
-			g_label = strdup(optarg);
-			break;
-			
-		case 'f': /* set file descriptor */
-			g_fd = fopen(optarg, "a+");
-			if (g_fd == NULL) 
-				perror("error");
-			break;
 		case 'h': 
 			usage(argc, argv);
 			break;
@@ -197,10 +180,10 @@ int main(int argc, char *argv[])
 	 */ 
 	g_mem_ptr = (int *)malloc(g_mem_size);
 
+	memset((char *)g_mem_ptr, 1, g_mem_size);
+
 	for (i = 0; i < g_mem_size / sizeof(int); i++)
 		g_mem_ptr[i] = i;
-
-	memset((char *)g_mem_ptr, 1, g_mem_size);
 
 	/* print experiment info before starting */
 	printf("memsize=%d KB, type=%s, cpuid=%d\n",
@@ -233,7 +216,7 @@ int main(int argc, char *argv[])
 		if (iterations > 0 && i >= iterations)
 			break;
 	}
-	printf("total sum = %ld\n", sum);
+	printf("total sum = %ld\n", (long)sum);
 	quit(0);
 }
 
