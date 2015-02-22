@@ -124,7 +124,7 @@ rd(iter_t iterations, void *cookie)
 #undef  DOIT
 */
 
-int bench_read()
+int bench_read_lmbench()
 {
 	int i;
 	int sum = 0;    
@@ -154,7 +154,7 @@ DOIT(12) DOIT(16) DOIT(20) DOIT(24)
 	return sum;
 }
 
-int bench_read_heechul()
+int bench_read()
 {
 	int i;	
 	int sum = 0;
@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
 	for (i=0;; i++) {
 		switch (acc_type) {
 		case READ:
-			sum += bench_read_heechul();
+			sum += bench_read();
 			break;
 		case WRITE:
 			sum += bench_write();

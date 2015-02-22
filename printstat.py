@@ -57,7 +57,7 @@ def main():
     print "90pctile: %.2f" % stats.percentile(90)
     print "95pctile: %.2f" % stats.percentile(95)
     print "99pctile: %.2f" %stats.percentile(99)
-    #print "median: ", stats.median()
+    print "median: ", stats.median()
     print "max: %.2f" % stats.max()
     print "stdev: %.2f" % stats.stdev()
     #avg  min max 99pctile

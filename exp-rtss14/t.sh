@@ -10,8 +10,11 @@
 # mode outputfile workload corunsize coruntype benchb
 # ./profile.sh solo profile-bw_read.txt na na na latency_16M
 # ./profile.sh solo profile-bw_read.txt na na na bw_read_16M
-./profile.sh corun profile-bw_read.txt na 16384 read latency_16M
-./profile.sh corun profile-bw_read.txt na 16384 read bw_read_16M
+
+#./profile.sh corun profile-bw_read.txt na 16384 read latency_16M
+#./profile.sh corun profile-bw_read.txt na 16384 read bw_read_16M
+
+./profile.sh solo profile-bw_write.txt na na na bw_read_16M
 
 # ./profile.sh corun profile-bw_read.txt na 1024 read latency_1M
 # ./profile.sh corun profile-bw_read.txt na 1024 write latency_1M

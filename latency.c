@@ -1,11 +1,9 @@
 /**
- * DRAM access latency measurement program
+ * Latency: memory access latency measurement microbenchmark
  *
- * Copyright (C) 2012  Heechul Yun <heechul@illinois.edu>
- *
+ * Copyright (C) 2015  Heechul Yun <heechul.yun@ku.edu>
  * This file is distributed under the University of Illinois Open Source
  * License. See LICENSE.TXT for details.
- *
  */
 
 /**************************************************************************
@@ -15,7 +13,6 @@
 /**************************************************************************
  * Included Files
  **************************************************************************/
-
 #define _GNU_SOURCE             /* See feature_test_macros(7) */
 #include <sched.h>
 #include <stdlib.h>
@@ -36,12 +33,12 @@
  * Public Definitions
  **************************************************************************/
 #define CACHE_LINE_SIZE 64
-#define CACHE_LINE_BITS 6
+#define DEFAULT_ALLOC_SIZE_KB 16384
+#define DEFAULT_ITER 100
 
 /**************************************************************************
  * Public Types
  **************************************************************************/
-
 struct item {
 	int data;
 	int in_use;
@@ -51,37 +48,33 @@ struct item {
 /**************************************************************************
  * Global Variables
  **************************************************************************/
-
-int g_mem_size = 16384*1024;
+int g_mem_size = DEFAULT_ALLOC_SIZE_KB*1024;
 
 /**************************************************************************
  * Public Function Prototypes
  **************************************************************************/
 
+/**************************************************************************
+ * Implementation
+ **************************************************************************/
 uint64_t get_elapsed(struct timespec *start, struct timespec *end)
 {
 	uint64_t dur;
-	if (start->tv_nsec > end->tv_nsec)
-		dur = (uint64_t)(end->tv_sec - 1 - start->tv_sec) * 1000000000 +
-			(1000000000 + end->tv_nsec - start->tv_nsec);
-	else
-		dur = (uint64_t)(end->tv_sec - start->tv_sec) * 1000000000 +
-			(end->tv_nsec - start->tv_nsec);
 
+	dur = ((uint64_t)end->tv_sec * 1000000000 + end->tv_nsec) - 
+		((uint64_t)start->tv_sec * 1000000000 + start->tv_nsec);
 	return dur;
-
 }
 
 void usage(int argc, char *argv[])
 {
 	printf("Usage: $ %s [<option>]*\n\n", argv[0]);
-	printf("-m: memory size in KB. deafult=8192\n");
-	printf("-s: turn serial access mode on\n");
+	printf("-m: memory size in KB. deafult=%d\n", DEFAULT_ALLOC_SIZE_KB);
+	printf("-s: turn on he serial access mode\n");
 	printf("-c: CPU to run.\n");
-	printf("-i: iterations. 0 means intefinite. default=0\n");
+	printf("-i: iterations. default=%d\n", DEFAULT_ITER);
 	printf("-p: priority\n");
 	printf("-h: help\n");
-	printf("\nExamples: \n$ bandwidth -m 8192 -a read -t 1 -c 2\n  <- 8MB read for 1 second on CPU 2\n");
 	exit(1);
 }
 
@@ -97,7 +90,7 @@ int main(int argc, char* argv[])
 	double avglat;
 	uint64_t readsum = 0;
 	int serial = 0;
-	int repeat = 10;
+	int repeat = DEFAULT_ITER;
 	int cpuid = 0;
 	struct sched_param param;
         cpu_set_t cmask;
@@ -144,6 +137,7 @@ int main(int argc, char* argv[])
 
 	workingset_size = g_mem_size / CACHE_LINE_SIZE;
 	srand(0);
+
 #if 0
         param.sched_priority = 1; /* 1(low) - 99(high) for SCHED_FIFO or SCHED_RR
 				     0 for SCHED_OTHER or SCHED_BATCH */
@@ -162,7 +156,8 @@ int main(int argc, char* argv[])
 		INIT_LIST_HEAD(&list[i].list);
 		// printf("%d 0x%x\n", list[i].data, &list[i].data);
 	}
-	printf("allocated: wokingsetsize=%d entries\n", workingset_size);
+	printf("allocated: wokingsetsize=%d entries (%d bytes/cache-line)\n", 
+	       workingset_size, CACHE_LINE_SIZE);
 
 	/* initialize */
 
@@ -182,7 +177,7 @@ int main(int argc, char* argv[])
 		list_add(&list[perm[i]].list, &head);
 		// printf("%d\n", perm[i]);
 	}
-	fprintf(stderr, "initialized\n");
+	fprintf(stderr, "initialized.\n");
 
 	/* actual access */
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -190,7 +185,7 @@ int main(int argc, char* argv[])
 		pos = (&head)->next;
 		for (i = 0; i < workingset_size; i++) {
 			struct item *tmp = list_entry(pos, struct item, list);
-			readsum += tmp->data;
+			readsum += tmp->data; // READ
 			pos = pos->next;
 			// printf("%d ", tmp->data, &tmp->data);
 		}

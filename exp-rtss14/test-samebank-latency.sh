@@ -116,26 +116,25 @@ cleanup >& /dev/null
 
 # mlp=1
 # log_echo "case3: latency vs. latency-mlp -l $mlp"
-log_echo "case3: latency -s vs. bandwidth -a write"
+# log_echo "case3: latency -s vs. bandwidth -a write"
+log_echo "case3: latency vs. bandwidth -a read"
 # log_echo "case3: latency vs. spec"
 
 echo $$ > /sys/fs/cgroup/spec2006/tasks
 
-time latency -s -m $size_in_kb -c 0 -i 100 2
-output=`latency -s -m $size_in_kb -c 0 -i 100 2> /dev/null`
+output=`latency -m $size_in_kb -c 0 -i 100 2> /dev/null`
 print_latency "$output"
 
 for cpu in `seq 1 $MAXCPU`; do 
     echo $$ > /sys/fs/cgroup/core$cpu/tasks
     # latency-mlp -m $size_in_kb -c  $cpu -l $mlp -i 1000000000 >& /dev/null &
-    bandwidth -m $size_in_kb -c $cpu -t 1000000 -a write >& /dev/null &
+    bandwidth -m $size_in_kb -c $cpu -t 1000000 -a read >& /dev/null &
     # run_bench 462.libquantum $cpu &
     sleep 3
     echo $$ > /sys/fs/cgroup/spec2006/tasks
-    output=`latency -s -m $size_in_kb -c 0 -i 100 2> /dev/null`
+    output=`latency -m $size_in_kb -c 0 -i 100 2> /dev/null`
     print_latency "$output"
-time latency -s -m $size_in_kb -c 0 -i 100 2
-#    cleanup >& /dev/null
+    # cleanup >& /dev/null
 done	
 cleanup >& /dev/null
 

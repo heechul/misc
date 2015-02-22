@@ -17,24 +17,34 @@ perf_hwevents="instructions r412e raa24 r1a2 r1f6"
 # GQ statistics 
 # uncore/event=0x00,umask=0x01  GQ read full
 # uncore/event=0x00,umask=0x02  GQ write full
+
 # uncore/event=0x01,umask=0x01  GQ RT not empty 
+
 # uncore/event=0x02,umask=0x01  GQ RT occupancy
-# uncore/event=0x03,umask=0x01  GQ RT alloc cnt
 # uncore/event=0x02,umask=0x02  GQ RT llc miss occupancy
+# uncore/event=0x02,umask=0x20  GQ WT occupancy
+
+# uncore/event=0x03,umask=0x01  GQ RT alloc cnt
 # uncore/event=0x03,umask=0x02  GQ RT llc miss alloc
+# uncore/event=0x03,umask=0x20  GQ WT alloc cnt
+
 # uncore/event=0x2a,umask=0x01  GQ IMC ch0 read occupancy
 # uncore/event=0x62,umask=0x01  GQ DRAM ch0 row miss
-# perf_hwevents_unc="uncore/event=0x00,umask=0x01/ uncore/event=0x01,umask=0x01/ uncore/event=0x02,umask=0x01/ uncore/event=0x03,umask=0x01/ uncore/event=0x02,umask=0x02/ uncore/event=0x03,umask=0x02/ uncore/event=0x2a,umask=0x04/ uncore/event=0x62,umask=0x04/"
+
+# uncore/event=0x0b,umask=0x01  UNC_L3_LINES_OUT.M_STATE 
+
+perf_hwevents_unc="uncore/event=0x0b,umask=0x01/ uncore/event=0x2C,umask=0x07/ uncore/event=0x2F,umask=0x07/"
+# perf_hwevents_unc="uncore/event=0x0b,umask=0x01/ uncore/event=0x01,umask=0x01/ uncore/event=0x02,umask=0x01/ uncore/event=0x03,umask=0x01/ uncore/event=0x02,umask=0x02/ uncore/event=0x03,umask=0x02/ uncore/event=0x2a,umask=0x04/ uncore/event=0x62,umask=0x04/"
 
 # DRAM statistics
-# UNC_QMC_NORMAL_READS.ANY IMC normal read requests  07 2C
+# UNC_QMC_NORMAL_READS.ANY IMC normal read requests  07 2C   (umask, evt)
 # UNC_QMC_WRITES.FULL.ANY IMC full cache line writes 07 2F
 # UNC_DRAM_OPEN.CH2 DRAM Channel 2 open commands    04 60
 # UNC_DRAM_PAGE_CLOSE.CH2 DRAM Channel 2 page close  04 61
 # UNC_DRAM_PAGE_MISS.CH2 DRAM Channel 2 page miss    04 62
 # UNC_DRAM_READ_CAS.CH2  DRAM Channel 2 read CAS     10 63
 # UNC_DRAM_WRITE_CAS.CH2 DRAM Channel 2 write CAS   10 64
-perf_hwevents_unc="uncore/event=0x2C,umask=0x07/ uncore/event=0x2F,umask=0x07/ uncore/event=0x60,umask=0x04/ uncore/event=0x61,umask=0x04/ uncore/event=0x62,umask=0x04/ uncore/event=0x63,umask=0x10/ uncore/event=0x64,umask=0x10/"
+# perf_hwevents_unc="uncore/event=0x2C,umask=0x07/ uncore/event=0x2F,umask=0x07/ uncore/event=0x60,umask=0x04/ uncore/event=0x61,umask=0x04/ uncore/event=0x62,umask=0x04/ uncore/event=0x63,umask=0x10/ uncore/event=0x64,umask=0x10/"
 
 # additional DRAM statistics
 # UNC_QMC_NORMAL_FULL.READ.CH2 read request queue full   04 27
@@ -158,6 +168,8 @@ do_experiment_solo()
 	taskset -c 1 perf stat -o $b.uncore.solo -a `get_perf_hwevent_unc_str` sleep 8000 &
 	if [ "$b" = "bw_write_1M" ]; then
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a write"
+	elif [ "$b" = "bw_write_16M" ]; then
+	    runcmd="./bandwidth -m 16384 -t 1000000 -i 3000 -a write"
 	elif [ "$b" = "bw_read_1M" ]; then
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a read"
 	elif [ "$b" = "bw_read_16M" ]; then
@@ -216,6 +228,8 @@ do_experiment()
 	taskset -c 1 perf stat -o $b.uncore.corun -a `get_perf_hwevent_unc_str` sleep 8000 &
 	if [ "$b" = "bw_write_1M" ]; then
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a write"
+	elif [ "$b" = "bw_write_16M" ]; then
+	    runcmd="./bandwidth -m 16384 -t 1000000 -i 3000 -a write"
 	elif [ "$b" = "bw_read_1M" ]; then
 	    runcmd="./bandwidth -m 1024 -t 1000000 -i 30000 -a read"
 	elif [ "$b" = "bw_read_16M" ]; then

@@ -294,8 +294,8 @@ int main(int argc, char* argv[])
 		ftrace_write("PGM: iter %d took %lld ns\n", i, tmpdiff);
 
 		printf("%4d %.2f\n", i, (double) tmpdiff/1000000);
-		fprintf(stderr, "%4d %.2f ---------------------------------\n",
-			i, (double) tmpdiff/1000000);
+		/* fprintf(stderr, "%4d %.2f ---------------------------------\n", */
+		/* 	i, (double) tmpdiff/1000000); */
 
 		nsdiff += tmpdiff;
 
