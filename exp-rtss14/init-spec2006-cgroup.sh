@@ -14,7 +14,11 @@ error()
 
 set_palloc_config()
 {
-    if [ "$SYSTEM" = "icecream" ]; then
+    if [ "$SYSTEM" = "odroid" ]; then
+	MAXCPU=3 # CPU 0-3
+	MASK=0x0000E000   # bank bits: 13,14,15
+	echo $MASK > $DBGFS/palloc_mask
+    elif [ "$SYSTEM" = "icecream" ]; then
 	MAXCPU=3 # CPU 0-3
 	if [ $CH -eq 1 ]; then
 	    if [ $NDIMM -eq 1 ]; then
