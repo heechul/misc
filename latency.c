@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 		INIT_LIST_HEAD(&list[i].list);
 		// printf("%d 0x%x\n", list[i].data, &list[i].data);
 	}
-	printf("allocated: wokingsetsize=%d entries (%d bytes/cache-line)\n", 
+	printf("allocated: wokingsetsize=%d entries\n", 
 	       workingset_size, CACHE_LINE_SIZE);
 
 	/* initialize */
