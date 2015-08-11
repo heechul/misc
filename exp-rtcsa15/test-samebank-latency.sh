@@ -117,6 +117,9 @@ set_cgroup_bins()
 
 test_latency_vs_latency()
 {
+    size_in_kb_corun=$1
+    [ -z "$size_in_kb_corun" ] && error "size_in_kb_corun is not set"
+    print_env
     cleanup >& /dev/null
     log_echo "latency($size_in_kb_subject) latency($size_in_kb_corun)"
     
@@ -137,7 +140,10 @@ test_latency_vs_latency()
 
 test_latency_vs_bandwidth()
 {
-
+    size_in_kb_corun=$1
+    acc_type=$2
+    [ -z "$acc_type" -o -z "$size_in_kb_corun" ] && error "size_in_kb_corun or acc_type is not set"
+    print_env
     cleanup >& /dev/null
     log_echo "latency($size_in_kb_subject) bandwidth_$acc_type ($size_in_kb_corun)"
     
@@ -160,6 +166,10 @@ test_latency_vs_bandwidth()
 
 test_bandwidth_vs_bandwidth()
 {
+    size_in_kb_corun=$1
+    acc_type=$2
+    [ -z "$acc_type" -o -z "$size_in_kb_corun" ] && error "size_in_kb_corun or acc_type is not set"
+    print_env
     cleanup >& /dev/null
     log_echo "bandwidth_read ($size_in_kb_subject) bandwidth_$acc_type ($size_in_kb_corun)"
     
@@ -206,24 +216,29 @@ set_pbpc
 # set_worst
 
 use_part=no
-acc_type=write
 if grep "0xc0f" /proc/cpuinfo; then
     # cortex-a15
-    size_in_kb_subject=48
-    size_in_kb_corun=4096
+    llc_ws=48
+    dram_ws=4096
 elif grep "0xc07" /proc/cpuinfo; then
     # cortex-a7
-    size_in_kb_subject=48
-    size_in_kb_corun=4096
+    llc_ws=48
+    dram_ws=4096
 elif grep "W3530" /proc/cpuinfo; then
     # nehalem
-    size_in_kb_subject=512
-    size_in_kb_corun=16384
+    llc_ws=512
+    dram_ws=16384
 fi
+
+size_in_kb_subject=$llc_ws
+
 for part in "yes" "no"; do
     use_part=$part
-    print_env
-#    test_latency_vs_latency
-#    test_latency_vs_bandwidth
-    test_bandwidth_vs_bandwidth
+    test_latency_vs_latency $dram_ws
+    test_latency_vs_bandwidth $dram_ws "read"
+    test_bandwidth_vs_bandwidth $dram_ws "read"
+    test_bandwidth_vs_bandwidth $llc_ws "read"
+    test_latency_vs_bandwidth $dram_ws "write"
+    test_bandwidth_vs_bandwidth $dram_ws "write"
+    test_bandwidth_vs_bandwidth $llc_ws "write"
 done
