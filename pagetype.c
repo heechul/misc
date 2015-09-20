@@ -186,6 +186,8 @@ static unsigned long	total_pages;
 static unsigned long	nr_pages[HASH_SIZE];
 static uint64_t 	page_flags[HASH_SIZE];
 
+static unsigned long    nr_color_pages[HASH_SIZE];
+
 
 /*
  * helper functions
@@ -287,11 +289,94 @@ static unsigned long pagemap_pfn(uint64_t val)
 }
 
 
+#define BITS_PER_LONG 64
+#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
 #define PAGE_SHIFT 12
 
+static unsigned long palloc_bitmask = 0xc000;
+
+/**
+ * __ffs - find first set bit in word
+ * @word: The word to search
+ *
+ * Undefined if no bit exists, so code should check against 0 first.
+ */
+static inline unsigned long __ffs(unsigned long word)
+{
+	asm("bsf %1,%0"
+		: "=r" (word)
+		: "rm" (word));
+	return word;
+}
+
+/*
+ * Find the next set bit in a memory region.
+ */
+unsigned long find_next_bit(const unsigned long *addr, unsigned long size,
+			    unsigned long offset)
+{
+	const unsigned long *p = addr + BITOP_WORD(offset);
+	unsigned long result = offset & ~(BITS_PER_LONG-1);
+	unsigned long tmp;
+
+	if (offset >= size)
+		return size;
+	size -= result;
+	offset %= BITS_PER_LONG;
+	if (offset) {
+		tmp = *(p++);
+		tmp &= (~0UL << offset);
+		if (size < BITS_PER_LONG)
+			goto found_first;
+		if (tmp)
+			goto found_middle;
+		size -= BITS_PER_LONG;
+		result += BITS_PER_LONG;
+	}
+	while (size & ~(BITS_PER_LONG-1)) {
+		if ((tmp = *(p++)))
+			goto found_middle;
+		result += BITS_PER_LONG;
+		size -= BITS_PER_LONG;
+	}
+	if (!size)
+		return result;
+	tmp = *p;
+
+found_first:
+	tmp &= (~0UL >> (BITS_PER_LONG - size));
+	if (tmp == 0UL)		/* Are any bits set? */
+		return result + size;	/* Nope. */
+found_middle:
+	return result + __ffs(tmp);
+}
+
+#define find_first_bit(addr, size) find_next_bit((addr), (size), 0)
+
+#define for_each_set_bit(bit, addr, size) \
+	for ((bit) = find_first_bit((addr), (size));		\
+	     (bit) < (size);					\
+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
+
+
+static inline int pfn_to_color(uint64_t pfn)
+{
+	int color = 0;
+	int idx = 0;
+	int c;
+	for_each_set_bit(c, &palloc_bitmask, sizeof(unsigned long) * 8) {
+		if ((pfn >> (c - PAGE_SHIFT)) & 0x1)
+			color |= (1<<idx);
+		idx++;
+	}
+	return color;
+}
+
+#if 0
 static char *dram_map(uint64_t pfn)
 {
 	static char buf[65];
+	
 	/* TODO: fixme */
 	int dram_bank_shift = 12;
 	uint64_t dram_bank_mask = 0x3;
@@ -304,6 +389,7 @@ static char *dram_map(uint64_t pfn)
 		(pfn >> (dram_bank_shift - PAGE_SHIFT)) & dram_bank_mask);
 	return buf;
 }
+#endif
 
 /*
  * page flag names
@@ -384,7 +470,7 @@ static void show_page(unsigned long voffset,
 {
 	if (opt_pid)
 		printf("%lx\t", voffset);
-	printf("%lx\t%s\t%s\n", offset, dram_map(offset), page_flag_name(flags));
+	printf("%lx\tcolor=%d\t%s\n", offset, pfn_to_color(offset), page_flag_name(flags));
 }
 
 static void show_summary(void)
@@ -406,6 +492,13 @@ static void show_summary(void)
 
 	printf("             total\t%10lu %8lu\n",
 			total_pages, pages2mb(total_pages));
+
+	for (i = 0; i < ARRAY_SIZE(nr_color_pages); i++) {
+		if (nr_color_pages[i])
+			printf("             color[%d]\t%10lu %8lu\n", i,
+			       nr_color_pages[i], 
+			       pages2mb(nr_color_pages[i]));
+	}
 }
 
 
@@ -568,7 +661,10 @@ static void add_page(unsigned long voffset,
 		show_page(voffset, offset, flags);
 
 	nr_pages[hash_slot(flags)]++;
+
 	total_pages++;
+
+	nr_color_pages[pfn_to_color(offset)]++;
 }
 
 #define KPAGEFLAGS_BATCH	(64 << 10)	/* 64k pages */
