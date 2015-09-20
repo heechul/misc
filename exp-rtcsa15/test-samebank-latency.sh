@@ -33,7 +33,7 @@ set_palloc_config()
     if [ "$SYSTEM" = "odroid" ]; then
 	MASK=0x00006000   # bank bits: 13,14
     elif [ "$SYSTEM" = "icecream" ]; then
-	MASK=0x00003000   # bank bits: 12,13
+	MASK=0x0000c000   # bank bits: 12,13
     else
 	error "no palloc config is available"
     fi
@@ -138,6 +138,14 @@ test_latency_vs_latency()
     cleanup >& /dev/null
 }
 
+print_allocated_colors()
+{
+    pgm=$1
+    for pid in `pidof $pgm`; do
+	pagetype -p $pid | grep "color"
+    done
+}
+
 test_latency_vs_bandwidth()
 {
     size_in_kb_corun=$1
@@ -146,8 +154,18 @@ test_latency_vs_bandwidth()
     print_env
     cleanup >& /dev/null
     log_echo "latency($size_in_kb_subject) bandwidth_$acc_type ($size_in_kb_corun)"
-    
-    [ "$use_part" = "yes" ] && echo $$ > /sys/fs/cgroup/spec2006/tasks
+
+    if [ "$use_part" = "yes" ]; then 
+	set_pbpc
+	echo $$ > /sys/fs/cgroup/spec2006/tasks
+    else
+	set_buddy
+	bandwidth -m 1000000 -t 1
+	# set_pbpc
+	# echo $$ > /sys/fs/cgroup/tasks
+	# echo 0,1,2,3 > /sys/fs/cgroup/palloc.bins
+    fi
+
     output=`latency -m $size_in_kb_subject -c 0 -i 10000 2> /dev/null | grep average | awk '{ print $2 }'`
     log_echo $output
     for cpu in `seq 1 $MAXCPU`; do 
@@ -155,6 +173,7 @@ test_latency_vs_bandwidth()
     # latency-mlp -m $size_in_kb -c  $cpu -l $mlp -i 1000000000 >& /dev/null &
 	bandwidth -m $size_in_kb_corun -c $cpu -t 1000000 -a $acc_type >& /dev/null &
     # run_bench 462.libquantum $cpu &
+	print_allocated_colors bandwidth
 	sleep 3
 	[ "$use_part" = "yes" ] && echo $$ > /sys/fs/cgroup/spec2006/tasks
 	output=`latency -m $size_in_kb_subject -c 0 -i 10000 2> /dev/null | grep average | awk '{ print $2 }'`
@@ -173,7 +192,14 @@ test_bandwidth_vs_bandwidth()
     cleanup >& /dev/null
     log_echo "bandwidth_read ($size_in_kb_subject) bandwidth_$acc_type ($size_in_kb_corun)"
     
-    [ "$use_part" = "yes" ] && echo $$ > /sys/fs/cgroup/spec2006/tasks
+    if [ "$use_part" = "yes" ]; then 
+	set_pbpc
+	echo $$ > /sys/fs/cgroup/spec2006/tasks
+    else
+	set_buddy
+	bandwidth -m 1000000 -t 1
+    fi
+
     output=`bandwidth -m $size_in_kb_subject -t 4 -c 0 2> /dev/null | grep average | awk '{ print $10 }'`
     log_echo $output
 # perf stat -e cache-misses -o perf.c0.txt bandwidth -m $size_in_kb_subject -t 4 -c 0 2> /dev/null | grep average | awk '{ print $10 }'
@@ -182,6 +208,7 @@ test_bandwidth_vs_bandwidth()
     # latency-mlp -m $size_in_kb -c  $cpu -l $mlp -i 1000000000 >& /dev/null &
 	bandwidth -m $size_in_kb_corun -c $cpu -t 1000000 -a $acc_type >& /dev/null &
     # run_bench 462.libquantum $cpu &
+	print_allocated_colors bandwidth
 	sleep 3
 	[ "$use_part" = "yes" ] && echo $$ > /sys/fs/cgroup/spec2006/tasks
 	output=`bandwidth -m $size_in_kb_subject -t 4 -c 0 2> /dev/null | grep average | awk '{ print $10 }'`
@@ -211,7 +238,7 @@ if [ ! -d "/sys/fs/cgroup/spec2006" ]; then
     set_spec2006_cgroup
     set_percore_cgroup
 fi
-set_pbpc
+# set_pbpc
 # set_buddy
 # set_worst
 
@@ -232,13 +259,13 @@ fi
 
 size_in_kb_subject=$llc_ws
 
-for part in "yes" "no"; do
+for part in "no" "yes" "no"; do
     use_part=$part
-    test_latency_vs_latency $dram_ws
+#    test_latency_vs_latency $dram_ws
     test_latency_vs_bandwidth $dram_ws "read"
-    test_bandwidth_vs_bandwidth $dram_ws "read"
-    test_bandwidth_vs_bandwidth $llc_ws "read"
-    test_latency_vs_bandwidth $dram_ws "write"
-    test_bandwidth_vs_bandwidth $dram_ws "write"
-    test_bandwidth_vs_bandwidth $llc_ws "write"
+    # test_bandwidth_vs_bandwidth $dram_ws "read"
+    # test_bandwidth_vs_bandwidth $llc_ws "read"
+    # test_latency_vs_bandwidth $dram_ws "write"
+    # test_bandwidth_vs_bandwidth $dram_ws "write"
+    # test_bandwidth_vs_bandwidth $llc_ws "write"
 done
