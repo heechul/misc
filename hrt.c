@@ -149,14 +149,13 @@ int main(int argc, char* argv[])
 {
 	struct item *list[NUM_FRAMES];
 	int workingset_size = 1024;
-
-	float interval_ms = 0.0;
+	long interval_ms = 0.0;
 
 	int i, j;
 	struct list_head head[NUM_FRAMES];
 	struct list_head *pos;
 	struct timespec start, end;
-	uint64_t nsdiff;
+	uint64_t total_dur_ns;
 	int64_t avglat;
 	uint64_t readsum = 0, cnt;
 	int serial = 0;
@@ -166,6 +165,7 @@ int main(int argc, char* argv[])
         cpu_set_t cmask;
 	int num_processors;
 	int opt, prio;
+	int deadline_misses = 0;
 
 	signal(SIGINT, &quit);
 
@@ -221,8 +221,8 @@ int main(int argc, char* argv[])
 			break;
 
 		case 'I': /* interval (period) */
-			interval_ms = strtof(optarg, NULL);
-			fprintf(stderr, "I(interval)=%f(ms)\n", interval_ms);
+			interval_ms = strtol(optarg, NULL, 0);
+			fprintf(stderr, "I(interval)=%ld(ms)\n", interval_ms);
 			break;
 
 		case 'h':
@@ -276,46 +276,49 @@ int main(int argc, char* argv[])
 
 	/* add marker */
 	/* actual access */
-	nsdiff = 0; j = 0; i = 0; 
+	total_dur_ns = 0; j = 0; i = 0; 
 	quit_signal = 0;
 	cnt = 0;
 	ftrace_write("PGM: begin main loop\n");
-	clock_gettime(CLOCK_REALTIME, &start);
 
 	while (1) {
-		uint64_t tmpdiff;
+		uint64_t dur_ns;
+
+		clock_gettime(CLOCK_REALTIME, &start);
+
 		list_for_each(pos, &head[i % NUM_FRAMES]) {
 			struct item *tmp = list_entry(pos, struct item, list);
 			readsum += tmp->data;
 			cnt++;
 		}
 		clock_gettime(CLOCK_REALTIME, &end);
-		tmpdiff = get_elapsed(&start, &end);
-		ftrace_write("PGM: iter %d took %lld ns\n", i, tmpdiff);
+		dur_ns = get_elapsed(&start, &end);
+		total_dur_ns += dur_ns;
 
-		printf("%4d %.2f\n", i, (double) tmpdiff/1000000);
-		/* fprintf(stderr, "%4d %.2f ---------------------------------\n", */
-		/* 	i, (double) tmpdiff/1000000); */
+		long remain_ns = (interval_ms * 1000000 - dur_ns);
+		struct timespec remain_ts;
+		remain_ts.tv_sec = remain_ns / 1000000000;
+		remain_ts.tv_nsec = remain_ns % 1000000000;
 
-		nsdiff += tmpdiff;
+		if (remain_ns > 0) {
+			nanosleep(&remain_ts, NULL);
+		} else {
+			fprintf(stderr, "deadline miss(%d): dur=%ld, i=%d\n", 
+					deadline_misses++, dur_ns, i);
+		}
 
 		if (++i == repeat || quit_signal)
 			goto out;
-
-		double remain_us = (interval_ms * 1000 - tmpdiff / 1000);
-		if (remain_us > 0) {
-			usleep((useconds_t)remain_us);
-		}
-		clock_gettime(CLOCK_REALTIME, &start);
 	}
 out:
-	avglat = (int64_t)(nsdiff/cnt); 
+	avglat = (int64_t)(total_dur_ns/cnt); 
 	fprintf(stderr, "duration %lldus\naverage %lldns | ", 
-		(long long)nsdiff/1000, (long long)avglat);
+		(long long)total_dur_ns/1000, (long long)avglat);
 	fprintf(stderr, "bandwidth %lld MB (%lld MiB)/s\n", 
 		(long long)64*1000/avglat, 
 		(long long)64*1000000000/avglat/1024/1024);
 	fprintf(stderr, "readsum  %lld\n", (unsigned long long)readsum);
+	fprintf(stderr, "deadline misses = %d\n", deadline_misses);
 
 	return 0;
 }
